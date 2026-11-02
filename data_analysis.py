@@ -6,8 +6,8 @@ TE = 0.05      # période d'échantillonnage (s)
 T_MIN = 1.5    # durée minimale d'un échelon (s)
 
 # Chaque ligne = un essai ; la ligne k de "in" correspond à la ligne k de "out"
-u = np.loadtxt("./bdd_in_mat_05.csv", delimiter=",")
-y = np.loadtxt("./bdd_out_mat_05.csv", delimiter=",")
+u = np.loadtxt("bdd_in_mat_05.csv", delimiter=",")
+y = np.loadtxt("bdd_out_mat_05.csv", delimiter=",")
 
 # Filtrage des essais défectueux : capteur figé ou sortie aberrante
 T_FIGE = 2.0   # durée max d'une mesure constante (s)
@@ -25,12 +25,12 @@ garde = ~(fige | depasse)
 print(f"Filtrage : {fige.sum()} essais figés, {depasse.sum()} avec y > {Y_MAX} plus de {N_DEPASS} fois "
       f"-> {(~garde).sum()} supprimés, {garde.sum()} conservés")
 
-np.savetxt("./bdd_in_mat_05_postfiltre.csv", u[garde], delimiter=",")
-np.savetxt("./bdd_out_mat_05_postfiltre.csv", y[garde], delimiter=",")
+np.savetxt("bdd_in_mat_05_postfiltre.csv", u[garde], delimiter=",")
+np.savetxt("bdd_out_mat_05_postfiltre.csv", y[garde], delimiter=",")
 
 # La suite travaille sur les données saines
-u = np.loadtxt("./bdd_in_mat_05_postfiltre.csv", delimiter=",")
-y = np.loadtxt("./bdd_out_mat_05_postfiltre.csv", delimiter=",")
+u = np.loadtxt("bdd_in_mat_05_postfiltre.csv", delimiter=",")
+y = np.loadtxt("bdd_out_mat_05_postfiltre.csv", delimiter=",")
 n_essais, N = u.shape
 
 rows = []
@@ -49,7 +49,7 @@ print(f"{len(df)} échelons de durée > {T_MIN} s sur {n_essais} essais")
 print(df.head(10))
 print(df.describe())
 
-df.to_csv("./echelons_longs.csv", index=False)
+df.to_csv("echelons_longs.csv", index=False)
 
 # Caractéristique statique y∞ = f(u) : points seuls, très petits vu leur nombre
 plt.figure()
