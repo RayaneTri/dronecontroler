@@ -62,8 +62,8 @@ def rapports_experience(u, y, min_len, n_tail, u_min, dy_min):
 
 
 def constantes_modele():
-    bdd_in = DATA_DIR / "bdd_in_mat_05.csv"
-    bdd_out = DATA_DIR / "bdd_out_mat_05.csv"
+    bdd_in = DATA_DIR / "bdd_in_mat_05_postfiltre.csv"
+    bdd_out = DATA_DIR / "bdd_out_mat_05_postfiltre.csv"
     min_len = 25 #longueur min d'un palier (échantillons) pour être en régime permanent
     n_tail = 5 #nb d'échantillons de fin de palier moyennés pour y permanent
     u_min = 0.05 #|u| minimal (évite de diviser par 0)

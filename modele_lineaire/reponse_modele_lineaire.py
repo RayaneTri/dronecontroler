@@ -28,7 +28,6 @@ def simule(u, rapport, tau, offset):
         y[k + 1] = a * y[k] + (1 - a) * (offset + rapport * u[k])
     return y
 
-
 u = u[experience]
 y_mes = y[experience]
 y_mod = simule(u, rapport, tau, offset)
