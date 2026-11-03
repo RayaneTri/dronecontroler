@@ -160,6 +160,7 @@ class MPC:
         self.Q, self.R = Q, R
         self.U = torch.zeros(N, requires_grad=True)                   
         self.h = torch.zeros(1, 1, 16) 
+        self.y = 0
         self.opt = torch.optim.Adam([self.U], lr=0.05)     
 
     def step_torch(self, h, u):
@@ -176,6 +177,9 @@ class MPC:
             cout += self.Q * (y * self.y_s + self.y_m - r[k]) ** 2 + self.R * U[k] ** 2
         return cout
 
+    def internal_state(self):
+        return self.y
+    
     def step(self, r):
         r = torch.as_tensor(r, dtype=torch.float32).flatten()
         for _ in range(50):
@@ -187,7 +191,7 @@ class MPC:
                 self.U.clamp_(-1, 1)
         u = float(self.U[0])
         with torch.no_grad():
-            self.h, _ = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
+            self.h, self.y = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
             self.U[:-1] = self.U[1:].clone()
         return u
     
