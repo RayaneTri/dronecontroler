@@ -38,7 +38,7 @@ classdef MPC < handle
 
         function y = internal_state(obj)
             % Méthode pour lire l'état interne (sortie prédite y) du MPC Python
-            % Sortie : y (double MATLAB, sortie normalisée du RNN)
+            % Sortie : y (double MATLAB, sortie du RNN dénormalisée, même unité que r)
 
             % Appeler la méthode internal_state() du script Python
             py_y = obj.py_mpc.internal_state();
