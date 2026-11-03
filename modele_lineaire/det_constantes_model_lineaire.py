@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 Ts = 0.05  # période d'échantillonnage (s)
-DATA_DIR = Path(__file__).resolve().parent.parent  # dossier des CSV, indépendant du répertoire courant
+DATA_DIR = Path(__file__).resolve().parent.parent
 
 
 def segments_constants(u):
