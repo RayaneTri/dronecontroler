@@ -2,6 +2,8 @@ import torch
 from torch import nn
 import lightning as L
 import numpy as np
+import matplotlib.pyplot as plt
+from apply_EKF import EKF
 
 class model_nn(L.LightningModule):
     """
@@ -152,6 +154,7 @@ class MPC:
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
+        self.filter = EKF(self.model, q=1,r=5)
 
         self.u_m, self.u_s = u_mean.item(), u_std.item()
         self.y_m, self.y_s = y_mean.item(), y_std.item()
@@ -159,7 +162,7 @@ class MPC:
         self.N = N
         self.Q, self.R = Q, R
         self.U = torch.zeros(N, requires_grad=True)                   
-        self.h = torch.zeros(1, 1, 16) 
+        self.h = torch.zeros(1, 1, 16)
         self.y = 0
         self.opt = torch.optim.Adam([self.U], lr=0.05)     
 
@@ -174,13 +177,13 @@ class MPC:
         cout = 0.0
         for k in range(self.N):
             h, y = self.step_torch(h, (U[k] - self.u_m) / self.u_s)
-            cout += self.Q * (y * self.y_s + self.y_m - r[k]) ** 2 + self.R * U[k] ** 2
+            cout += self.Q * (y * self.y_s + self.y_m  - r[k]) ** 2 + self.R * U[k] ** 2
         return cout
 
     def internal_state(self):
-        return self.y
+        return self.y * self.y_s + self.y_m
     
-    def step(self, r):
+    def step(self, r, y):
         r = torch.as_tensor(r, dtype=torch.float32).flatten()
         for _ in range(50):
             self.opt.zero_grad()
@@ -191,7 +194,8 @@ class MPC:
                 self.U.clamp_(-1, 1)
         u = float(self.U[0])
         with torch.no_grad():
-            self.h, self.y = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
+            self.h, _ = self.filter.ekf(y, self.U[0])
+            _, self.y = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
             self.U[:-1] = self.U[1:].clone()
         return u
     
