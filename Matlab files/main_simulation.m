@@ -5,7 +5,7 @@ pyenv('Version', venv_python);
 % 2. Choix du contrôleur
 % true  : Modèle linéaire (LQR / LinearModel)
 % false : MPC non-linéaire (RNN PyTorch)
-use_linear_model = false; 
+use_linear_model = true; 
 
 horizon_N = 10;
 
