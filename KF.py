@@ -24,9 +24,8 @@ DEFAULT_OUTPUT = DATA_DIR / "bdd_out_mat_05.csv"
 
 # Covariances des bruits de processus et de mesure.
 # Elles peuvent être ajustées selon le niveau de bruit des données.
-Q_K = 0.05
-R_K = 1.0
-
+Q_K = 1
+R_K = 1.3
 
 def kf(
     y_k: float,
