@@ -1,3 +1,5 @@
+import os
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # chemins relatifs au dossier du script
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
