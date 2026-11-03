@@ -1,11 +1,20 @@
 classdef LinearModel < handle
     properties
         py_linear % Stocke l'instance de la classe Python (modèle linéaire / LQR)
+        Q         % Pondération de l'état conservée pour reset()
+        R         % Pondération de la commande conservée pour reset()
     end
     
     methods
         function obj = LinearModel(varargin)
             % Constructeur de la classe MATLAB pour le modèle linéaire
+            if nargin < 2
+                error('LinearModel:MissingWeights', ...
+                    'Q et R doivent être fournis.');
+            end
+
+            obj.Q = varargin{1};
+            obj.R = varargin{2};
             
             % S'assurer que le dossier courant est dans le path Python
             path_list = py.sys.path;
@@ -14,7 +23,7 @@ classdef LinearModel < handle
             end
             
             % Instancier la classe Python linear_model_matlab.LQR
-            obj.py_linear = py.linear_model_matlab.LQR();
+            obj.py_linear = py.linear_model_matlab.LQR(obj.Q, obj.R);
         end
         
         function u = step(obj, r)
@@ -34,8 +43,7 @@ classdef LinearModel < handle
         
         function reset(obj)
             % Réinitialiser l'état du contrôleur
-            obj.py_linear = py.linear_model_matlab.LQR();
+            obj.py_linear = py.linear_model_matlab.LQR(obj.Q, obj.R);
         end
     end
 end
-

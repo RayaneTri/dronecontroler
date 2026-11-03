@@ -6,7 +6,7 @@ classdef MPC < handle
     methods
         function obj = MPC(model_path, Q, R, N)
             % Constructeur de la classe MATLAB
-            if nargin < 2
+            if nargin < 4
                 N = 20;
             end
             
