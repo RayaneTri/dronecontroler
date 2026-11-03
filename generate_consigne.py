@@ -7,7 +7,7 @@ TS = 0.05             # période d'échantillonnage (s), identique aux autres CS
 DUREE = 5             # durée totale de la consigne (s)
 AMPLITUDE = 1         # amplitude du sinus
 FREQUENCE = 1         # fréquence du sinus (Hz), soit une période de 1 s
-OFFSET = -10          # valeur moyenne, proche du point de repos N(0) ≈ -9.81
+OFFSET = 0          # valeur moyenne, proche du point de repos N(0) ≈ -9.81
 
 t = np.arange(round(DUREE / TS)) * TS
 yc = OFFSET + AMPLITUDE * np.sin(2 * np.pi * FREQUENCE * t)

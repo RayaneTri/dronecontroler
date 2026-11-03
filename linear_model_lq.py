@@ -18,12 +18,11 @@ a = np.exp(-TS / tau)
 
 # Commande LQ à horizon infini sur x[k+1] = a*x[k] + (1-a)*v[k], v[k] = N(u[k]), y = x
 q = 4          # pondération sur l'état (reprise du MPC de rnn_mpc.ipynb)
-r = 1          # pondération sur la commande (reprise du MPC de rnn_mpc.ipynb)
+r = 1         # pondération sur la commande (reprise du MPC de rnn_mpc.ipynb)
 U_MAX = 1      # saturation de la commande : domaine d'identification de N (V)
 
 # Solution scalaire de l'équation de Riccati, sous forme fermée
-P = (q * (1 - a) - r * (1 + a)
-     + np.sqrt((r * (1 + a) - q * (1 - a))**2 + 4 * q * r)) / (2 * (1 - a))
+P = (q * (1 - a) - r * (1 + a) + np.sqrt((r * (1 + a) - q * (1 - a))**2 + 4 * q * r)) / (2 * (1 - a))
 K = a * (1 - a) * P / (r + (1 - a)**2 * P)
 N_lq = 1 + K   # précompensation pour un gain statique unitaire
 
@@ -61,7 +60,7 @@ def simule_lq(yc, a):
     """Boucle fermée LQ sur le modèle linéaire (un essai par ligne) : commandes et état prédit."""
     x = np.empty_like(yc)
     u_cmd = np.empty_like(yc)
-    x[:, 0] = yc[:, 0]  # départ en régime établi sur la première consigne
+    x[:, 0] = 0  
     for k in range(yc.shape[1]):
         u_cmd[:, k] = N_inv(lqr(yc[:, k], x[:, k]))  # commande réelle u = N⁻¹(v), saturée
         if k + 1 < yc.shape[1]:
