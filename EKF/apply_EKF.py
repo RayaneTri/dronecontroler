@@ -4,123 +4,10 @@ from pathlib import Path
 import torch
 import matplotlib.pyplot as plt
 
-#Importation des données du NN (chemin relatif au fichier, indépendant du dossier de lancement)
-NN_DIR = Path(__file__).resolve().parent.parent / "export_NN"
-
-def load_matlab_array(filename):
-    """Lit un fichier au format matrice MATLAB ([a b; c d]) et renvoie un array numpy 2D."""
-    text = (NN_DIR / filename).read_text().strip().strip("[]")
-    return np.array([[float(x) for x in row.split()] for row in text.split(";")])
-
-bxu = load_matlab_array("bias_h.txt").ravel() # bxu : hidden layer bias vector (n_x,)
-bf = load_matlab_array("head_bias.txt").ravel() # bf : output layer bias (n_y,)
-Wf = load_matlab_array("head_weight.txt") # Wf : hidden to output layer weights
-Wx = load_matlab_array("weight_hh_l0.txt") # Wx : hidden to hidden layer weights
-Wu = load_matlab_array("weight_ih_l0.txt") # Wu : input to hidden layer weights
-
-n_x = Wx.shape[0] # dimension de l'état caché
-
-u_mean = -0.0023 #à importer de rnn
-y_mean = -9.7708 #à importer de rnn
-u_std = 0.5731 #à importer de rnn
-y_std = 12.5953 #à importer de rnn
-
 # Données d'experience :
 DATA_DIR = Path(__file__).resolve().parent.parent
 bdd_in = DATA_DIR / "bdd_in_mat_05_postfiltre.csv"
 bdd_out = DATA_DIR / "bdd_out_mat_05_postfiltre.csv"
-
-# Supress scientific notation when printing NumPy arrays
-np.set_printoptions(precision=3,suppress=True)
-
-# State model noise covariance matrix Q_k
-# When Q is large, the Kalman Filter tracks large changes in
-# the sensor measurements more closely than for smaller Q.
-Q_k = np.eye(n_x)
-
-# Sensor measurement noise covariance matrix R_k
-# If we are sure about the measurements, R will be near zero.
-R_k = np.eye(bf.size)
-
-# Measurement matrix H_k
-H_k = Wf
-
-def getF(x, u):
-    """
-    Calculates and returns the Jacobian F matrix (Jacobian of F according to x)
-    """
-    z = Wx @ x + Wu @ np.atleast_1d(u) + bxu
-    return np.diag(1 - np.tanh(z)**2) @ Wx
- 
-def getB(x, u):
-    """
-    Calculates and returns the Jacobian B matrix (Jacobian of F according to u)
-    """
-    z = Wx @ x + Wu @ np.atleast_1d(u) + bxu
-    return np.diag(1 - np.tanh(z)**2) @ Wu
-
-def ekf(y_k, x_hat_k_minus_1,
-        u_k_minus_1, P_k_minus_1):
-    """
-    Extended Kalman Filter at step k
-         
-    INPUT
-        :param y_k
-        :param x_hat_k_minus_1 The state estimate at time k-1
-        :param u_k_minus_1 The control vector applied at time k-1
-        :param P_k_minus_1 The state covariance matrix estimate at time k-1
-        :param dk Time interval in seconds
-             
-    OUTPUT
-        :return x_hat_k near-optimal state estimate at time k 
-        :return P_k state covariance_estimate for time k           
-    """
-
-    ######################### Predict #############################
-    # Predict the state estimate at time k based on the state
-    # estimate at time k-1 and the control input applied at time k-1.
-    # Noise is zero-mean, so it only appears through Q_k in P_k.
-    x_hat_k = np.tanh(
-                    Wx @ x_hat_k_minus_1 +
-                    Wu @ np.atleast_1d(u_k_minus_1) +
-                    bxu)
-
-    print(f'State Estimate Before EKF={x_hat_k}')
-
-    # Jacobian of the motion model, evaluated at the previous estimate
-    F_k = getF(x_hat_k_minus_1, u_k_minus_1)
-
-    # Predict the state covariance estimate based on the previous
-    # covariance and some noise
-    P_k = F_k @ P_k_minus_1 @ F_k.T + Q_k
-
-    ################### Update (Correct) ##########################
-    # Calculate the difference between the actual sensor measurements
-    # at time k minus what the measurement model predicted
-    # the sensor measurements would be for the current timestep k.
-    # Noise is zero-mean, so it only appears through R_k in S_k.
-    measurement_residual_y_k = y_k - (H_k @ x_hat_k + bf)
-
-    print(f'Observation={y_k}')
-
-    # Calculate the measurement residual covariance
-    S_k = H_k @ P_k @ H_k.T + R_k
-
-    # Calculate the near-optimal Kalman gain
-    # We use pseudoinverse since some of the matrices might be non-square or singular.
-    K_k = P_k @ H_k.T @ np.linalg.pinv(S_k)
-
-    # Calculate an updated state estimate for time k
-    x_hat_k = x_hat_k + (K_k @ measurement_residual_y_k)
-
-    # Update the state covariance estimate for time k
-    P_k = P_k - (K_k @ H_k @ P_k)
-
-    # Print the best (near-optimal) estimate of the current state of the robot
-    print(f'State Estimate After EKF={x_hat_k}')
-
-    # Return the updated state and covariance estimates
-    return x_hat_k, P_k
 
 class EKF:
     """
@@ -129,7 +16,7 @@ class EKF:
         y_k = H_k x_k + bf + v_k,                                 v_k ~ N(0, R_k)
     u et y sont en unités physiques à l'extérieur de la classe, normalisés à l'intérieur.
     """
-    def __init__(self, model_path, model_nn, q=1.0, r=1.0, p0=0.1):
+    def __init__(self, model_path, model_nn, q=1.0, r=1.0, p0=0.1, u_mean = -0.0023, y_mean = -9.7708, u_std = 0.5731, y_std = 12.5953):
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
@@ -212,11 +99,8 @@ class EKF:
         measurement_residual_y_k = y_k - (self.H_k @ x_hat_k + self.bf)
 
         S_k = self.H_k @ P_k @ self.H_k.T + self.R_k
-
         K_k = P_k @ self.H_k.T @ np.linalg.pinv(S_k)
-
         x_hat_k = x_hat_k + (K_k @ measurement_residual_y_k)
-
         P_k = P_k - (K_k @ self.H_k @ P_k)
 
         # Get ready for the next timestep
@@ -238,59 +122,44 @@ class EKF:
         """État caché estimé au format torch (num_layers, batch, n_x), ex. pour initialiser MPC.h."""
         return torch.tensor(self.x_hat_k_minus_1, dtype=torch.float32).reshape(1, 1, -1)
 
-def main():
+def test_EKF():
     """
     Boucle EKF de test
     """
+    import sys
+    sys.path.append(str(DATA_DIR / "Matlab files"))
+    from mpc_controller import model_nn
 
     # List of input / outputs
     u = np.loadtxt(bdd_in, delimiter=",")
     y = np.loadtxt(bdd_out, delimiter=",")
 
-    # The estimated state vector at time k-1 in the global reference frame.
-    x_hat_k_minus_1 = np.zeros(n_x)
-
-    # State covariance matrix P_k_minus_1
-    P_k_minus_1 = np.eye(n_x)*0.1
+    # definition de l'EKF
+    filtre = EKF(DATA_DIR / "Matlab files" / "model.ckpt", model_nn,q=1,r=5)
 
     # Une ligne = un essai, une colonne = un pas de temps
     essai = 0
 
-    # Sortie estimée (unités physiques) et son écart-type
+    # Sortie estimée et son écart-type avec EKF
     y_hat = []
     sigma_y_hat = []
 
-    # Simulation du RNN seul (boucle ouverte, sans correction par les mesures)
-    x_rnn = np.zeros(n_x)
+    # Simulation du RNN seul
+    x_rnn = np.zeros(filtre.n_x)
     y_rnn = []
 
     # Start at k=1
     for k in range(1, y.shape[1]):
 
-        # Print the current timestep
-        # print(f'Timestep k={k}')
-
-        # Run the Extended Kalman Filter and store the near-optimal state and covariance estimates
-        optimal_x_hat_k, P_hat_k = ekf(
-            (y[essai, k] - y_mean) / y_std, # Most recent sensor measurement (normalisée)
-            x_hat_k_minus_1, # Our most recent estimate of the state
-            (u[essai, k-1] - u_mean) / u_std, # Control input applied at k-1 (normalisé)
-            P_k_minus_1) # State covariance at k-1
-
-        # Dé-normalisation de la sortie estimée et de sa variance
-        y_hat_k = ((H_k @ optimal_x_hat_k + bf) * y_std + y_mean).item()
-        var_y_hat_k = (H_k @ P_hat_k @ H_k.T).item() * y_std**2
+        # Un pas d'EKF : mesure à k, commande à k-1 (unités physiques)
+        y_hat_k, sigma_y_hat_k = filtre.step(y[essai, k], u[essai, k-1])
         y_hat.append(y_hat_k)
-        sigma_y_hat.append(np.sqrt(var_y_hat_k))
-        # print(f'Estimated output={y_hat_k:.3f} (mesure={y[essai, k]:.3f})')
+        sigma_y_hat.append(sigma_y_hat_k)
 
         # Pas du RNN seul : même prédiction que l'EKF, mais sans mise à jour
-        x_rnn = np.tanh(Wx @ x_rnn + Wu @ np.atleast_1d((u[essai, k-1] - u_mean) / u_std) + bxu)
-        y_rnn.append(((H_k @ x_rnn + bf) * y_std + y_mean).item())
-
-        # Get ready for the next timestep by updating the variable values
-        x_hat_k_minus_1 = optimal_x_hat_k
-        P_k_minus_1 = P_hat_k
+        u_norm = (u[essai, k-1] - filtre.u_mean) / filtre.u_std
+        x_rnn = np.tanh(filtre.Wx @ x_rnn + filtre.Wu @ np.atleast_1d(u_norm) + filtre.bxu)
+        y_rnn.append(((filtre.H_k @ x_rnn + filtre.bf) * filtre.y_std + filtre.y_mean).item())
 
     # Tracé y mesuré vs y estimé
     y_hat = np.array(y_hat)
