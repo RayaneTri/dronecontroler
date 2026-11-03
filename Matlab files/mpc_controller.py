@@ -148,7 +148,7 @@ u_std = torch.tensor(0.5731)
 y_std = torch.tensor(12.5953)
 
 class MPC:
-    def __init__(self, model_path, N=20):
+    def __init__(self, model_path, Q, R, N=20):
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
@@ -157,10 +157,10 @@ class MPC:
         self.y_m, self.y_s = y_mean.item(), y_std.item()
 
         self.N = N
-        self.Q, self.R = 1, 1
+        self.Q, self.R = Q, R
         self.U = torch.zeros(N, requires_grad=True)                   
         self.h = torch.zeros(1, 1, 16) 
-        self.opt = torch.optim.SGD([self.U], lr=1e-3)     
+        self.opt = torch.optim.Adam([self.U], lr=0.05)     
 
     def step_torch(self, h, u):
         x = u.reshape(1, 1, 1)

@@ -4,7 +4,7 @@ classdef MPC < handle
     end
     
     methods
-        function obj = MPC(model_path, N)
+        function obj = MPC(model_path, Q, R, N)
             % Constructeur de la classe MATLAB
             if nargin < 2
                 N = 20;
@@ -18,7 +18,7 @@ classdef MPC < handle
             
             % Instancier la classe Python mpc_controller.MPC
             % model_path doit être un char ou string MATLAB
-            obj.py_mpc = py.mpc_controller.MPC(model_path, int32(N));
+            obj.py_mpc = py.mpc_controller.MPC(model_path, Q, R, int32(N));
         end
         
         function u = step(obj, r)
