@@ -35,5 +35,17 @@ classdef MPC < handle
             % Convertir le résultat Python en double MATLAB
             u = double(py_u);
         end
+
+        function y = internal_state(obj)
+            % Méthode pour lire l'état interne (sortie prédite y) du MPC Python
+            % Sortie : y (double MATLAB, sortie normalisée du RNN)
+
+            % Appeler la méthode internal_state() du script Python
+            py_y = obj.py_mpc.internal_state();
+
+            % self.y vaut 0 (int) avant le 1er step, puis un tenseur torch 1x1 :
+            % py.float() gère les deux cas avant la conversion en double MATLAB
+            y = double(py.float(py_y));
+        end
     end
 end
