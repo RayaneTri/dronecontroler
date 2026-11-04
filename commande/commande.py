@@ -5,6 +5,9 @@ Commande du système en position
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.polynomial import chebyshev as C
+from scipy.linalg import null_space
+from scipy.optimize import minimize
 
 class COMMANDE:
     """
@@ -14,43 +17,66 @@ class COMMANDE:
         vitesses : vitesses aux instants de passage (nulles par défaut)
         acc_initiale : accélération en temps[0]
         Ts : période d'échantillonnage
-        borner : si True, raccourcit les segments qui font sortir z de [min(positions), max(positions)]
+        borner : si True, z reste dans [min(positions), max(positions)]
+        degre_max : degré maximal des polynomes, tol : dépassement toléré (m)
+    Chaque segment [temps[i],temps[i+1]] dure tout son intervalle et minimise l'intégrale de z''² :
+    le degré augmente tant que les bornes ne sont pas respectées ou que les accélérations diminuent encore.
     """
-    def __init__(self,temps:list,positions:list,Ts:float,vitesses:list=None,acc_initiale=0.0,borner:bool=False):
+    def __init__(self,temps:list,positions:list,Ts:float,vitesses:list=None,acc_initiale=0.0,borner:bool=False,
+                 degre_max:int=60,tol:float=1e-3):
         self.temps = list(temps)
         self.positions = positions
         self.Ts = Ts
         self.vitesses = vitesses if vitesses is not None else [0]*len(temps)
         self.acc_initiale = acc_initiale
+        self.borner = borner
+        self.degre_max = degre_max
+        self.tol = tol
         self.coefs, self.bornes = self.coefficients()
-        if borner:
-            self.borner_trajectoire()
 
     @staticmethod
-    def polynome(coef:list,t:float):
+    def matrices_cheb(T,n,t):
         """
-        Renvoie la réponse du polynome de coefficients coef (ordre croissant) en t
+        Renvoie [V0,V1,V2] : V_m @ c est la dérivée m-ième, aux instants locaux t de [0,T],
+        du polynome de degré n de coefficients c dans la base de Chebyshev sur [0,T]
         """
-        return sum(c*t**i for i, c in enumerate(coef))
+        V0 = C.chebvander(2*np.asarray(t,dtype=float)/T - 1,n)
+        D = np.vstack([C.chebder(np.eye(n+1),axis=0)*2/T, np.zeros((1,n+1))])  # dérivation dans la base
+        return [V0, V0 @ D, V0 @ D @ D]
 
-    @staticmethod
-    def conv_pos_acceleration(coef,T):
+    def coefficients_segment(self,T,za,zb,va,vb,aa,ab,n):
         """
-        Renvoie l'accélération z''(T) du polynome coef
+        Polynome de degré n minimisant l'intégrale de z''² sur [0,T] avec z, z' et z'' imposés en 0 et en T
+        (et z dans les bornes si borner). Renvoie (polynome, coût) ou None si les bornes ne sont pas respectées
         """
-        return 2*coef[2] + 6*coef[3]*T + 12*coef[4]*T**2 + 20*coef[5]*T**3
-
-    @staticmethod
-    def coefficients_segment(T,za,zb,va,vb,aa,ab):
-        """
-        rends les coefs du polynome de degrée 5 avec z, z' et z'' imposés en 0 et en T (jerk libre)
-        """
-        R = zb - za - va*T - aa*T**2/2
-        S = vb - va - aa*T
-        U = ab - aa
-        A = np.array([[T**3,T**4,T**5],[3*T**2,4*T**3,5*T**4],[6*T,12*T**2,20*T**3]])
-        a3, a4, a5 = np.linalg.solve(A,[R,S,U])
-        return [za, va, aa/2, a3, a4, a5]
+        E = np.vstack(self.matrices_cheb(T,n,[0,T]))
+        d = np.array([za,zb,va,vb,aa,ab])
+        c0 = np.linalg.lstsq(E,d,rcond=None)[0]
+        N = null_space(E)
+        # coût exact par quadrature de Gauss-Legendre
+        x_g, w_g = np.polynomial.legendre.leggauss(n+1)
+        A2 = self.matrices_cheb(T,n,(x_g+1)*T/2)[2]
+        Q = A2.T @ (A2*(w_g*T/2)[:,None])
+        H, g = N.T @ Q @ N, N.T @ Q @ c0
+        y = -np.linalg.lstsq(H,g,rcond=None)[0] if N.shape[1] else np.zeros(0)
+        z_min, z_max = min(self.positions), max(self.positions)
+        if self.borner and N.shape[1]:
+            # contraintes sur une grille de Chebyshev (resserrée aux extrémités)
+            V = self.matrices_cheb(T,n,T*(1 - np.cos(np.pi*np.linspace(0,1,20*n)))/2)[0]
+            Vc0, VN = V @ c0, V @ N
+            z = Vc0 + VN @ y
+            if z.min() < z_min or z.max() > z_max:  # sinon la solution sans contrainte convient déjà
+                y = minimize(lambda y: (y @ H @ y + 2*g @ y), y, jac=lambda y: 2*(H @ y + g), method='SLSQP',
+                             constraints=[{'type':'ineq','fun':lambda y: np.concatenate([z_max - Vc0 - VN@y, Vc0 + VN@y - z_min]),
+                                           'jac':lambda y: np.vstack([-VN, VN])}],
+                             options={'maxiter':500,'ftol':1e-12}).x
+        c = c0 + N @ y
+        p = C.Chebyshev(c,domain=[0,T])
+        if self.borner:
+            z = p(np.linspace(0,T,max(2000,round(10*T/self.Ts))))
+            if max(z_min - z.min(), z.max() - z_max) > self.tol:
+                return None
+        return p, c @ Q @ c
 
     def depassement(self):
         """
@@ -59,40 +85,32 @@ class COMMANDE:
         z = np.array(self.generation_traj())
         return max(min(self.positions) - z.min(), z.max() - max(self.positions), 0.0)
 
-    def borner_trajectoire(self,tol=1e-3,max_iter=50):
-        """
-        Raccourcit (facteur 0.9) les segments dépassant les bornes, sans changer les autres instants de passage
-        """
-        for _ in range(max_iter):
-            if self.depassement() <= tol:
-                return
-            z = np.array(self.generation_traj())
-            k = int(np.argmax(np.maximum(min(self.positions) - z, z - max(self.positions))))
-            t_k = self.instants()[k]
-            i = max(j for j in range(len(self.temps)-1) if self.temps[j] <= t_k)
-            nouveau = self.temps[i] + 0.9*(self.temps[i+1] - self.temps[i])
-            if i+1 == len(self.temps)-1 or nouveau - self.temps[i] < self.Ts:
-                break
-            self.temps[i+1] = nouveau
-            self.coefs, self.bornes = self.coefficients()
-
     def coefficients(self):
         """
-        rends (coefs, bornes), deux listes de même dimension : coefs[i] est le polynome du segment [temps[i],temps[i+1]]
-        (temps local) et bornes[i] = (temps[i], temps[i+1]) ses bornes en temps, tels que :
+        rends (coefs, bornes), deux listes de même dimension : coefs[i] est le polynome (Chebyshev, temps local) du segment
+        [temps[i],temps[i+1]] et bornes[i] = (temps[i], temps[i+1]), tels que :
         z(temps[i]) = positions[i], z'(temps[i]) = vitesses[i], z''(temps[0]) = acc_initiale
         Le premier segment part de acc_initiale, chaque segment arrive avec une accélération nulle
-        (donc l'accélération est continue) et un jerk libre (degrée 5). Entre deux waypoints à vitesse nulle,
-        un segment après le premier est monotone : pas de dépassement des positions de passage.
+        (donc l'accélération est continue). Le degré part de 5 et augmente tant que le segment sort des bornes
+        ou que le coût (intégrale de z''²) baisse de plus de 1 %.
         """
         coefs = []
         bornes = []
         acc = self.acc_initiale
         for i in range(len(self.temps)-1):
             T = self.temps[i+1] - self.temps[i]
-            coef = self.coefficients_segment(T,self.positions[i],self.positions[i+1],
-                                                        self.vitesses[i],self.vitesses[i+1],acc,0.0)
-            coefs.append(coef)
+            meilleur = None
+            for n in range(5,self.degre_max+1):
+                sol = self.coefficients_segment(T,self.positions[i],self.positions[i+1],
+                                                self.vitesses[i],self.vitesses[i+1],acc,0.0,n)
+                if sol is None:
+                    continue
+                if meilleur is not None and sol[1] > 0.99*meilleur[1]:
+                    break
+                meilleur = sol
+            if meilleur is None:
+                raise ValueError(f"segment {i} : bornes non respectées jusqu'au degré {self.degre_max}")
+            coefs.append(meilleur[0])
             bornes.append((self.temps[i],self.temps[i+1]))
             acc = 0.0
         return coefs, bornes
@@ -101,7 +119,7 @@ class COMMANDE:
         """
         Évalue le polynome d'un segment (commençant en t_debut) aux instants Ts*k pour k de k_debut à k_fin inclus
         """
-        return [self.polynome(coef,self.Ts*k - t_debut) for k in range(k_debut,k_fin+1)]
+        return list(coef(self.Ts*np.arange(k_debut,k_fin+1) - t_debut))
 
     def echantillonnage(self,coefs):
         """
@@ -110,9 +128,10 @@ class COMMANDE:
         valeurs = []
         k_debut = round(self.temps[0]/self.Ts)
         for i, coef in enumerate(coefs):
-            k_fin = round(self.temps[i+1]/self.Ts)
-            valeurs += self.echantillonnage_segment(coef,self.temps[i],k_debut,k_fin)
-            k_debut = k_fin + 1
+            t_debut, t_fin = self.bornes[i]
+            k_fin = round(t_fin/self.Ts)
+            valeurs += self.echantillonnage_segment(coef,t_debut,k_debut,k_fin)
+            k_debut = max(k_debut, k_fin + 1)
         return valeurs
 
     def generation_traj(self):
@@ -124,10 +143,9 @@ class COMMANDE:
     def generation_acc(self):
         """
         Donne la commande en acceleration pour suivre la trajectoire definie
-        (dérivée seconde des polynomes de position de degré 5 au plus)
+        (dérivée seconde des polynomes de position)
         """
-        coefs_acc = [[2*c[2],6*c[3],12*c[4],20*c[5]] for c in self.coefs]
-        return self.echantillonnage(coefs_acc)
+        return self.echantillonnage([c.deriv(2) for c in self.coefs])
 
     def coefficients_a(self,t):
         """
@@ -146,7 +164,7 @@ class COMMANDE:
         Renvoie l'acceleration à l'instant t
         """
         coef, t_debut = self.coefficients_a(t)
-        return self.conv_pos_acceleration(coef,t - t_debut)
+        return float(coef.deriv(2)(t - t_debut))
 
     def instants(self):
         """
@@ -177,7 +195,7 @@ class COMMANDE:
         plt.show()
 
 if __name__ == "__main__":
-    commande = COMMANDE(temps=[0, 5, 10], positions=[0, 0.5, -0.2], Ts=0.05, acc_initiale=-9.81, borner=True)
+    commande = COMMANDE(temps=[0, 10, 20], positions=[0, 0.5, -0.2], Ts=0.05, acc_initiale=-9.81, borner=True)
     t0 = time.perf_counter()
     commande.generation_acc()
     print(f"Temps de calcul de la génération d'accélération : {(time.perf_counter() - t0)*1e3:.3f} ms")
