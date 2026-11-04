@@ -143,6 +143,9 @@ class EKF:
         var_y_hat_k = np.diag(self.H_k @ P_k @ self.H_k.T) * scale**2
         return y_hat_k, np.sqrt(var_y_hat_k)
 
-    def h0(self):
+    def x0(self):
         """État caché du RNN estimé au format torch (num_layers, batch, n_hr), ex. pour initialiser MPC.h."""
-        return torch.tensor(self.x_hat_k_minus_1[:self.n_hr], dtype=torch.float32).reshape(1, 1, -1)
+        return torch.tensor(self.x_hat_k_minus_1[:self.n_hr], dtype=torch.float32).reshape(1, 1, -1), \
+               torch.tensor(self.x_hat_k_minus_1[-3], dtype=torch.float32).reshape(1, 1, -1), \
+               torch.tensor(self.x_hat_k_minus_1[-2], dtype=torch.float32).reshape(1, 1, -1), \
+               torch.tensor(self.x_hat_k_minus_1[-1], dtype=torch.float32).reshape(1, 1, -1)

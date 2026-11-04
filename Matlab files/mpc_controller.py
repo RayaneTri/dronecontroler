@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import lightning as L
 import numpy as np
-#import matplotlib.pyplot as plt
 from apply_EKF import EKF
 
 class model_nn(L.LightningModule):
@@ -144,63 +143,75 @@ class model_nn(L.LightningModule):
         )
         return opt
 
-u_mean = torch.tensor(-0.0023)
-y_mean = torch.tensor(-9.7708)
-u_std = torch.tensor(0.5731)
-y_std = torch.tensor(12.5953)
-
 class MPC:
-    def __init__(self, model_path, Q, R, ekf, N=20, V=1, W=1):
+    def __init__(self, model_path, Q, R, use_ekf, N=20, V=1, W=1):
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
-        self.use_ekf = ekf
-        self.filter = EKF(self.model, q=V, r=W)
+        self.use_ekf = use_ekf
 
-        self.u_m, self.u_s = u_mean.item(), u_std.item()
-        self.y_m, self.y_s = y_mean.item(), y_std.item()
+        self.u_m, self.u_s = -0.0023, 0.5731                           # normalisation de la commande u
+        self.az_m, self.az_s = -9.7708, 12.5953                        # normalisation de az (sortie du RNN)
+        self.Te = 0.05
+        self.filter = EKF(self.model, q=V, r=W, dt=self.Te,
+                          u_mean=self.u_m, u_std=self.u_s, az_mean=self.az_m, az_std=self.az_s)
 
         self.N = N
         self.Q, self.R = Q, R
-        self.U = torch.zeros(N, requires_grad=True)                   
-        self.h = torch.zeros(1, 1, 16)
-        self.y = 0
-        self.u_prev = 0.0                                              # commande appliquée au pas précédent (pour l'EKF)
-        self.opt = torch.optim.Adam([self.U], lr=0.05)     
+        self.U = torch.zeros(N, requires_grad=True)
+
+        # État interne : h_k (état caché du RNN, normalisé) ; az_k, vz_k, z_k en unités physiques
+        self.h_k = torch.zeros(1, 1, 16)
+        self.az_k = 0.0
+        self.vz_k = 0.0
+        self.z_k = 0.0
+
+        self.u_prev = 0.0                                              # commande appliquée au pas précédent
+        self.opt = torch.optim.Adam([self.U], lr=0.05)
 
     def step_torch(self, h, u):
         x = u.reshape(1, 1, 1)
         _, h_new = self.model.rnn(x, h)
-        y = self.model.head(h_new[-1])      
+        y = self.model.head(h_new[-1])
         return h_new, y
 
-    def J(self, U, r, h0):
-        h = h0
+    def J(self, U, r, h0, vz_0, z_0):
+        h_k = h0
+        vz_k = vz_0
+        z_k = z_0
         cout = 0.0
         for k in range(self.N):
-            h, y = self.step_torch(h, (U[k] - self.u_m) / self.u_s)
-            cout += self.Q * (y * self.y_s + self.y_m  - r[k]) ** 2 + self.R * U[k] ** 2
+            h_k, az_k = self.step_torch(h_k, (U[k] - self.u_m) / self.u_s)
+            az_k = az_k * self.az_s + self.az_m
+            vz_k = vz_k + az_k * self.Te
+            z_k = z_k + vz_k * self.Te
+
+            cout += self.Q * (z_k - r[k]) ** 2 + self.R * U[k] ** 2
         return cout
 
     def internal_state(self):
-        return self.y * self.y_s + self.y_m
-    
-    def step(self, r, y):
-        # 1. Mise à jour de l'état interne h_k à partir de h_{k-1} et de la commande appliquée au pas précédent u_{k-1}
+        """État interne courant [az, vz, z] en unités physiques."""
+        return [float(self.az_k), float(self.vz_k), float(self.z_k)]
+
+    def step(self, r, az, vz, z):
+        # 1. État interne à l'instant k, à partir de l'état en k-1 et de la commande appliquée au pas précédent u_{k-1}
         if self.use_ekf:
-            # EKF : prédiction par le modèle + correction avec la mesure y_k
-            self.filter.ekf(y, self.u_prev)
-            self.h = self.filter.h0()                  # numpy (16,) -> torch (1, 1, 16)
+            # EKF : prédiction par le modèle + correction avec les mesures (az, vz, z)
+            self.filter.ekf([az, vz, z], self.u_prev)
+            self.h_k, self.az_k, self.vz_k, self.z_k = self.filter.x0()
         else:
-            # Boucle ouverte : prédiction par le modèle seul, la mesure y_k est ignorée
+            # Boucle ouverte : prédiction par le modèle seul (mêmes équations que J), les mesures sont ignorées
             with torch.no_grad():
-                self.h, _ = self.step_torch(self.h, torch.tensor((self.u_prev - self.u_m) / self.u_s))
+                self.h_k, az_n = self.step_torch(self.h_k, torch.tensor((self.u_prev - self.u_m) / self.u_s))
+            self.az_k = az_n.item() * self.az_s + self.az_m
+            self.vz_k = self.vz_k + self.az_k * self.Te
+            self.z_k = self.z_k + self.vz_k * self.Te
 
         # 2. Optimisation de la séquence de commandes à partir de l'état estimé
         r = torch.as_tensor(r, dtype=torch.float32).flatten()
         for _ in range(50):
             self.opt.zero_grad()
-            L = self.J(self.U, r, self.h)
+            L = self.J(self.U, r, self.h_k, self.vz_k, self.z_k)
             L.backward()
             self.opt.step()
             with torch.no_grad():
@@ -208,7 +219,5 @@ class MPC:
         u = self.U[0].detach().item()
         self.u_prev = u
         with torch.no_grad():
-            # Prédiction de y_{k+1} (affichée comme état interne au pas suivant) ; self.h reste h_k
-            _, self.y = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
-            self.U[:-1] = self.U[1:].clone()
+            self.U[:-1] = self.U[1:].clone()                           # warm start pour le pas suivant
         return u
