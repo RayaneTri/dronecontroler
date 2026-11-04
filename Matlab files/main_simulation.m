@@ -12,7 +12,7 @@ horizon_N = 20;
 Q = 10;
 R = 1;
 
-V = 10;
+V = 1;
 W = 1;
 ekf = true;
 
