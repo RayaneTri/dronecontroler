@@ -40,8 +40,8 @@ classdef Commande < handle
                 py.bool(logical(borner)));
         end
 
-        function y = acceleration(obj, t)
-            py_y = obj.py_commande.acceleration(double(t));
+        function y = position(obj, t)
+            py_y = obj.py_commande.position(double(t));
             y = double(py_y);
         end
     end

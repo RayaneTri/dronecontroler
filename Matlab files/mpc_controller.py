@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import lightning as L
 import numpy as np
+#import matplotlib.pyplot as plt
 from apply_EKF import EKF
 
 class model_nn(L.LightningModule):
@@ -154,7 +155,7 @@ class MPC:
         self.az_m, self.az_s = -9.7708, 12.5953                        # normalisation de az (sortie du RNN)
         self.Te = 0.05
         self.filter = EKF(self.model, q=V, r=W, dt=self.Te,
-                          u_mean=self.u_m, u_std=self.u_s, az_mean=self.az_m, az_std=self.az_s)
+                          u_mean=self.u_m, u_std=self.u_s, acc_mean=self.az_m, acc_std=self.az_s)
 
         self.N = N
         self.Q, self.R = Q, R
@@ -185,13 +186,14 @@ class MPC:
             az_k = az_k * self.az_s + self.az_m
             vz_k = vz_k + az_k * self.Te
             z_k = z_k + vz_k * self.Te
-
-            cout += self.Q * (z_k - r[k]) ** 2 + self.R * U[k] ** 2
+            
+            U_prec = U[k-1] if k == 0 else self.u_prev
+            cout += self.Q * (z_k - r[k]) ** 2 + self.R * (U[k]-U_prec) ** 2
         return cout
 
     def internal_state(self):
         """État interne courant [az, vz, z] en unités physiques."""
-        return [float(self.az_k), float(self.vz_k), float(self.z_k)]
+        return np.array([float(self.az_k), float(self.vz_k), float(self.z_k)], dtype=np.float64)
 
     def step(self, r, az, vz, z):
         # 1. État interne à l'instant k, à partir de l'état en k-1 et de la commande appliquée au pas précédent u_{k-1}

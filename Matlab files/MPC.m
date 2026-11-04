@@ -21,32 +21,34 @@ classdef MPC < handle
             obj.py_mpc = py.mpc_controller.MPC(model_path, Q, R, ekf, int32(N), V, W);
         end
         
-        function u = step(obj, r, y)
+        function u = step(obj, r, az, vz, z)
             % Méthode pour appeler l'optimisation MPC
             % Entrée : r (vecteur de consigne MATLAB de longueur N)
             
             % Convertir le tableau MATLAB en liste Python pour la compatibilité
             r_row = reshape(double(r), 1, []);
             py_r = py.list(num2cell(r_row));
-            py_y = py.float(double(y));
+            py_az = py.float(double(az));
+            py_vz = py.float(double(vz));
+            py_z = py.float(double(z));
             
             % Appeler la méthode step() du script Python
-            py_u = obj.py_mpc.step(py_r, py_y);
+            py_u = obj.py_mpc.step(py_r, py_az, py_vz, py_z);
             
             % Convertir le résultat Python en double MATLAB
             u = double(py_u);
         end
 
         function y = internal_state(obj)
-            % Méthode pour lire l'état interne (sortie prédite y) du MPC Python
-            % Sortie : y (double MATLAB, sortie du RNN dénormalisée, même unité que r)
-
-            % Appeler la méthode internal_state() du script Python
+            % Méthode pour lire l'état interne [az, vz, z] du MPC Python
+            % Sortie : y = [az; vz; z] (double MATLAB, vecteur colonne 3x1)
+            
+            % Appeler la méthode internal_state() du script Python (renvoie un np.ndarray)
             py_y = obj.py_mpc.internal_state();
-
-            % self.y vaut 0 (int) avant le 1er step, puis un tenseur torch 1x1 :
-            % py.float() gère les deux cas avant la conversion en double MATLAB
-            y = double(py.float(py_y));
+            
+            % Conversion : ndarray -> liste Python -> double MATLAB -> vecteur 3x1
+            y = double(py.list(py_y.tolist()));
+            y = reshape(y, [3, 1]);
         end
     end
 end
