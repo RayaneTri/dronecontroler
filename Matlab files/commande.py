@@ -140,10 +140,25 @@ class COMMANDE:
                 break
         return self.coefs[i], self.bornes[i][0]
     
+    def position(self,t):
+        """
+        Renvoie la position à l'instant t
+        Avant temps[0] / après temps[-1], renvoie la première / dernière position de passage
+        """
+        if t <= self.temps[0]:
+            return self.positions[0]
+        if t >= self.temps[-1]:
+            return self.positions[-1]
+        coef, t_debut = self.coefficients_a(t)
+        return self.polynome(coef,t - t_debut)
+
     def acceleration(self,t):
         """
         Renvoie l'acceleration à l'instant t
+        Hors de [temps[0], temps[-1]], la position est tenue : accélération nulle
         """
+        if t < self.temps[0] or t >= self.temps[-1]:
+            return 0.0
         coef, t_debut = self.coefficients_a(t)
         return self.conv_pos_acceleration(coef,t - t_debut)
 
