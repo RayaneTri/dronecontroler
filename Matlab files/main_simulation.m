@@ -1,9 +1,16 @@
 random_init ;
 
 % 1. Configurer l'environnement Python (.venv dans le dossier parent)
-venv_python = fullfile(pwd, '..', '.venv', 'bin', 'python');
-pyenv('Version', ...
-    'C:\Users\strig\dronecontroler\.venv\Scripts\python.exe');
+script_dir = fileparts(mfilename('fullpath'));
+if ispc
+    venv_python = 'C:\Users\strig\dronecontroler\.venv\Scripts\python.exe';
+elseif ismac
+    venv_python = fullfile(script_dir, '..', '.venv', 'bin', 'python');
+else
+    error('main_simulation:UnsupportedOS', ...
+        'Système d''exploitation non pris en charge.');
+end
+pyenv('Version', venv_python);
 
 addpath(fileparts(mfilename('fullpath')));
 commande_system = Commande( ...
