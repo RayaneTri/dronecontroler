@@ -2,6 +2,7 @@
 Commande du système en position
 """
 
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,7 @@ class COMMANDE:
         self.Ts = Ts
         self.vitesses = vitesses if vitesses is not None else [0]*len(temps)
         self.acc_initiale = acc_initiale
-        self.coefs = self.coefficients()
+        self.coefs, self.bornes = self.coefficients()
         if borner:
             self.borner_trajectoire()
 
@@ -33,32 +34,14 @@ class COMMANDE:
         return sum(c*t**i for i, c in enumerate(coef))
 
     @staticmethod
-    def acceleration_fin_segment(coef,T):
+    def conv_pos_acceleration(coef,T):
         """
         Renvoie l'accélération z''(T) du polynome coef
         """
         return 2*coef[2] + 6*coef[3]*T + 12*coef[4]*T**2 + 20*coef[5]*T**3
 
     @staticmethod
-    def coefficients_segment(T,za,zb,va=0,vb=0,aa=None,ja=None):
-        """
-        rends les coefs du polynome (ordre croissant, temps local entre 0 et T, toujours 6 coefs) avec :
-        z(0) = za, z'(0) = va, z(T) = zb, z'(T) = vb
-        L'accélération et le jerk finaux ne sont pas imposés
-        """
-        dz = zb - za
-        if aa is None:
-            return [za, va, (3*dz - (2*va + vb)*T)/T**2, (-2*dz + (va + vb)*T)/T**3, 0, 0]
-        if ja is None:
-            R = dz - va*T - aa*T**2/2
-            S = vb - va - aa*T
-            return [za, va, aa/2, (4*R - S*T)/T**3, (S*T - 3*R)/T**4, 0]
-        R = dz - va*T - aa*T**2/2 - ja*T**3/6
-        S = vb - va - aa*T - ja*T**2/2
-        return [za, va, aa/2, ja/6, (5*R - S*T)/T**4, (S*T - 4*R)/T**5]
-
-    @staticmethod
-    def coefficients_segment_acc_finale(T,za,zb,va,vb,aa,ab):
+    def coefficients_segment(T,za,zb,va,vb,aa,ab):
         """
         rends les coefs du polynome de degrée 5 avec z, z' et z'' imposés en 0 et en T (jerk libre)
         """
@@ -91,25 +74,28 @@ class COMMANDE:
             if i+1 == len(self.temps)-1 or nouveau - self.temps[i] < self.Ts:
                 break
             self.temps[i+1] = nouveau
-            self.coefs = self.coefficients()
+            self.coefs, self.bornes = self.coefficients()
 
     def coefficients(self):
         """
-        rends la liste des coefs des polynomes (un par segment [temps[i],temps[i+1]], temps local) tels que :
+        rends (coefs, bornes), deux listes de même dimension : coefs[i] est le polynome du segment [temps[i],temps[i+1]]
+        (temps local) et bornes[i] = (temps[i], temps[i+1]) ses bornes en temps, tels que :
         z(temps[i]) = positions[i], z'(temps[i]) = vitesses[i], z''(temps[0]) = acc_initiale
         Le premier segment part de acc_initiale, chaque segment arrive avec une accélération nulle
         (donc l'accélération est continue) et un jerk libre (degrée 5). Entre deux waypoints à vitesse nulle,
         un segment après le premier est monotone : pas de dépassement des positions de passage.
         """
         coefs = []
+        bornes = []
         acc = self.acc_initiale
         for i in range(len(self.temps)-1):
             T = self.temps[i+1] - self.temps[i]
-            coef = self.coefficients_segment_acc_finale(T,self.positions[i],self.positions[i+1],
+            coef = self.coefficients_segment(T,self.positions[i],self.positions[i+1],
                                                         self.vitesses[i],self.vitesses[i+1],acc,0.0)
             coefs.append(coef)
+            bornes.append((self.temps[i],self.temps[i+1]))
             acc = 0.0
-        return coefs
+        return coefs, bornes
 
     def echantillonnage_segment(self,coef,t_debut,k_debut,k_fin):
         """
@@ -143,6 +129,25 @@ class COMMANDE:
         coefs_acc = [[2*c[2],6*c[3],12*c[4],20*c[5]] for c in self.coefs]
         return self.echantillonnage(coefs_acc)
 
+    def coefficients_a(self,t):
+        """
+        Renvoie (coef, t_debut) : les coefs du segment actif à l'instant t et son instant de début (les coefs sont en temps local)
+        Avant le début / après la fin, renvoie le premier / dernier segment
+        """
+        i = len(self.bornes) - 1
+        for j, (_, fin) in enumerate(self.bornes):
+            if t < fin:
+                i = j
+                break
+        return self.coefs[i], self.bornes[i][0]
+    
+    def acceleration(self,t):
+        """
+        Renvoie l'acceleration à l'instant t
+        """
+        coef, t_debut = self.coefficients_a(t)
+        return self.conv_pos_acceleration(coef,t - t_debut)
+
     def instants(self):
         """
         Renvoie les instants d'échantillonnage correspondant aux sorties échantillonnées
@@ -173,4 +178,7 @@ class COMMANDE:
 
 if __name__ == "__main__":
     commande = COMMANDE(temps=[0, 5, 10], positions=[0, 0.5, -0.2], Ts=0.05, acc_initiale=-9.81, borner=True)
+    t0 = time.perf_counter()
+    commande.generation_acc()
+    print(f"Temps de calcul de la génération d'accélération : {(time.perf_counter() - t0)*1e3:.3f} ms")
     commande.tracer()
