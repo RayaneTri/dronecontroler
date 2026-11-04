@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import lightning as L
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from apply_EKF import EKF
 
 class model_nn(L.LightningModule):
