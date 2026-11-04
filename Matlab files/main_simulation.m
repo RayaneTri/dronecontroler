@@ -7,10 +7,14 @@ pyenv('Version', venv_python);
 % false : MPC non-linéaire (RNN PyTorch)
 use_linear_model = false; 
 
-horizon_N = 10;
+horizon_N = 20;
 
-Q = 1;
-R = 10;
+Q = 10;
+R = 1;
+
+V = 10;
+W = 1;
+ekf = true;
 
 disp('Initialisation du contrôleur pour le modèle linéaire (LQR)...');
 linear_system = LinearModel(Q, R);
@@ -20,15 +24,15 @@ if use_linear_model
 else
     disp('Initialisation du contrôleur MPC (RNN PyTorch)...');
     model_path = 'model.ckpt';
-    mpc_system = MPC(model_path, Q, R, horizon_N);
+    mpc_system = MPC(model_path, Q, R, ekf, horizon_N, V, W);
     %linear_system = mpc_system;
 end
 
 % 3. Définir une consigne (référence) pour l'horizon N
-r_reference = ones(1, horizon_N) * 1.5; 
+%r_reference = ones(1, horizon_N) * 1.5; 
 
 % 4. Calculer la commande
-commande_u = mpc_system.step(r_reference);
+%commande_u = mpc_system.step(r_reference);
 
-disp('Commande calculée :');
-disp(commande_u);
+%disp('Commande calculée :');
+%disp(commande_u);

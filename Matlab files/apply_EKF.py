@@ -1,7 +1,6 @@
 #site utilisé pour squelette EKF, author: Addison Sears-Collins: https://automaticaddison.com/extended-kalman-filter-ekf-with-python-code-example/
 import numpy as np
 import torch
-from mpc_controller import model_nn
 
 class EKF:
     """
@@ -110,5 +109,7 @@ class EKF:
 
     def h0(self):
         """État caché estimé au format torch (num_layers, batch, n_x), ex. pour initialiser MPC.h."""
-        return torch.tensor(self.x_hat_k_minus_1, dtype=torch.float32).reshape(1, 1, -1)
+        # return torch.tensor(self.x_hat_k_minus_1, dtype=torch.float32).reshape(1, 1, -1)
+        return torch.from_numpy(self.x_hat_k_minus_1).float().reshape(1, 1, -1)
+                
     

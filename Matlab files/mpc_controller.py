@@ -150,11 +150,12 @@ u_std = torch.tensor(0.5731)
 y_std = torch.tensor(12.5953)
 
 class MPC:
-    def __init__(self, model_path, Q, R, N=20):
+    def __init__(self, model_path, Q, R, ekf, N=20, V=1, W=1):
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
-        self.filter = EKF(self.model, q=1,r=5)
+        self.use_ekf = ekf
+        self.filter = EKF(self.model, q=V, r=W)
 
         self.u_m, self.u_s = u_mean.item(), u_std.item()
         self.y_m, self.y_s = y_mean.item(), y_std.item()
@@ -164,6 +165,7 @@ class MPC:
         self.U = torch.zeros(N, requires_grad=True)                   
         self.h = torch.zeros(1, 1, 16)
         self.y = 0
+        self.u_prev = 0.0                                              # commande appliquée au pas précédent (pour l'EKF)
         self.opt = torch.optim.Adam([self.U], lr=0.05)     
 
     def step_torch(self, h, u):
@@ -184,6 +186,17 @@ class MPC:
         return self.y * self.y_s + self.y_m
     
     def step(self, r, y):
+        # 1. Mise à jour de l'état interne h_k à partir de h_{k-1} et de la commande appliquée au pas précédent u_{k-1}
+        if self.use_ekf:
+            # EKF : prédiction par le modèle + correction avec la mesure y_k
+            self.filter.ekf(y, self.u_prev)
+            self.h = self.filter.h0()                  # numpy (16,) -> torch (1, 1, 16)
+        else:
+            # Boucle ouverte : prédiction par le modèle seul, la mesure y_k est ignorée
+            with torch.no_grad():
+                self.h, _ = self.step_torch(self.h, torch.tensor((self.u_prev - self.u_m) / self.u_s))
+
+        # 2. Optimisation de la séquence de commandes à partir de l'état estimé
         r = torch.as_tensor(r, dtype=torch.float32).flatten()
         for _ in range(50):
             self.opt.zero_grad()
@@ -192,12 +205,10 @@ class MPC:
             self.opt.step()
             with torch.no_grad():
                 self.U.clamp_(-1, 1)
-        u = float(self.U[0])
+        u = self.U[0].detach().item()
+        self.u_prev = u
         with torch.no_grad():
-            self.h, _ = self.filter.ekf(y, self.U[0])
+            # Prédiction de y_{k+1} (affichée comme état interne au pas suivant) ; self.h reste h_k
             _, self.y = self.step_torch(self.h, torch.tensor((u - self.u_m) / self.u_s))
             self.U[:-1] = self.U[1:].clone()
         return u
-    
-#model_path = 'model.ckpt'        # Path to the trained model checkpoint       # To be completed
-#mpc = MPC(model_path, N=20)

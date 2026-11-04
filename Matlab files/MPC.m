@@ -4,7 +4,7 @@ classdef MPC < handle
     end
     
     methods
-        function obj = MPC(model_path, Q, R, N)
+        function obj = MPC(model_path, Q, R, ekf, N, V, W)
             % Constructeur de la classe MATLAB
             if nargin < 4
                 N = 20;
@@ -18,19 +18,20 @@ classdef MPC < handle
             
             % Instancier la classe Python mpc_controller.MPC
             % model_path doit être un char ou string MATLAB
-            obj.py_mpc = py.mpc_controller.MPC(model_path, Q, R, int32(N));
+            obj.py_mpc = py.mpc_controller.MPC(model_path, Q, R, ekf, int32(N), V, W);
         end
         
-        function u = step(obj, r)
+        function u = step(obj, r, y)
             % Méthode pour appeler l'optimisation MPC
             % Entrée : r (vecteur de consigne MATLAB de longueur N)
             
             % Convertir le tableau MATLAB en liste Python pour la compatibilité
             r_row = reshape(double(r), 1, []);
             py_r = py.list(num2cell(r_row));
+            py_y = py.float(double(y));
             
             % Appeler la méthode step() du script Python
-            py_u = obj.py_mpc.step(py_r);
+            py_u = obj.py_mpc.step(py_r, py_y);
             
             % Convertir le résultat Python en double MATLAB
             u = double(py_u);
