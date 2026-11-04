@@ -23,7 +23,7 @@ class COMMANDE:
     le degré augmente tant que les bornes ne sont pas respectées ou que les accélérations diminuent encore.
     """
     def __init__(self,temps:list,positions:list,Ts:float,vitesses:list=None,acc_initiale=0.0,borner:bool=False,
-                 degre_max:int=60,tol:float=1e-3):
+                 degre_max:int=,tol:float=1e-3):
         self.temps = list(temps)
         self.positions = positions
         self.Ts = Ts
