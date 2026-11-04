@@ -6,12 +6,15 @@ function y = mpc_internal_state(varargin)
 %                              à forcer Simulink à exécuter ce bloc APRÈS le bloc
 %                              du contrôleur (dépendance de données).
 %
+%   Sortie : y = [az; vz; z] (vecteur colonne 3x1, unités physiques)
+%            az en m/s², vz en m/s, z en m
+%
 %   À appeler depuis un bloc MATLAB Function, en extrinsèque :
 %
 %       function y = mpc_state_block(u)
 %       %#codegen
 %       coder.extrinsic('mpc_internal_state');
-%       y = 0.0;                     % type et taille de la sortie Simulink
+%       y = zeros(3, 1);             % type et taille de la sortie Simulink : [az; vz; z]
 %       y = mpc_internal_state(u);
 %       end
 %
