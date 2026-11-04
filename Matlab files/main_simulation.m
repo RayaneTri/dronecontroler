@@ -28,11 +28,10 @@ use_linear_model = false;
 
 horizon_N = 20;
 
-Q = 10;
+Q = 100;
 R = 1;
-
-V = 100;
-W = 1;
+V = 1;
+W = 20;
 ekf = true;
 
 disp('Initialisation du contrôleur pour le modèle linéaire (LQR)...');

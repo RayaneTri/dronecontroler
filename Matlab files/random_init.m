@@ -4,7 +4,7 @@ RandStream.setGlobalStream(s);
 
 Ts = 0.05; % Maybe not the right value...
 
-g_noise = 0.01; % Global noise gain
+g_noise = 0.7; % 0.01; % Global noise gain
 
 % Generate random seeds for each state variable to ensure variability in simulations for data generation
 
