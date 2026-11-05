@@ -1,0 +1,114 @@
+\documentclass[aspectratio=169, 10pt]{beamer}
+
+% ==============================================================================
+% PACKAGES ET ENCODAGE
+% ==============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\graphicspath{{figures/}{presentation/figures/}{.}{presentation/}}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, backgrounds}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+
+% ==============================================================================
+% THÈME ET PERSONNALISATION VISUELLE
+% ==============================================================================
+\usetheme{Frankfurt}
+\usecolortheme{whale}
+\usecolortheme{orchid} % Blocs assortis au thème whale
+
+% Définitions de couleurs pour les diagrammes TikZ et puces
+\definecolor{CSNavy}{RGB}{14, 38, 74}
+\definecolor{CSSlate}{RGB}{35, 78, 112}
+\definecolor{DarkGreen}{RGB}{34, 112, 60}
+
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamertemplate{navigation symbols}{} % Masquer les petits symboles de navigation
+
+% Numérotation des slides en pied de page
+\setbeamertemplate{footline}{
+    \leavevmode%
+    \hbox{%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.5ex,dp=1ex,left,leftskip=1em]{author in head/foot}%
+        \usebeamerfont{author in head/foot}\insertshortauthor
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.5ex,dp=1ex,center]{title in head/foot}%
+        \usebeamerfont{title in head/foot}\insertshorttitle
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.5ex,dp=1ex,right,rightskip=1em]{date in head/foot}%
+        \insertframenumber{} / \inserttotalframenumber
+    \end{beamercolorbox}}%
+    \vskip0pt%
+}
+
+% Puces personnalisées
+\setbeamertemplate{itemize item}{\color{CSSlate}$\blacktriangleright$}
+\setbeamertemplate{itemize subitem}{\color{CSSlate}$\bullet$}
+
+% ==============================================================================
+% INFORMATIONS SUR LA PRÉSENTATION
+% ==============================================================================
+\title[EI DDC - MPC - Gp. 8]{Data Driven Control Integration Week}
+\subtitle{Group 8 (MPC)}
+
+\author[C. Brunet, M. Moussaoui, C. Tamboise, R. Trigoust]{
+    Christian \textsc{Brunet} \and Matthieu \textsc{Moussaoui}\\
+    Clément \textsc{Tamboise} \and Rayane \textsc{Trigoust}
+}
+
+\institute[CentraleSupélec]{
+    CentraleSupélec
+}
+
+\date[11/06/2026]{Friday, November 6, 2026}
+
+% ==============================================================================
+% DOCUMENT START
+% ==============================================================================
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% Title Slide (with background screen_simulink at 20% opacity)
+% ------------------------------------------------------------------------------
+{
+\setbeamertemplate{background}{%
+    \begin{tikzpicture}[remember picture, overlay]
+        % Full slide fill (cover mode with cropping)
+        \clip (current page.south west) rectangle (current page.north east);
+        \node[at=(current page.center), opacity=0.20, inner sep=0pt] {
+            \includegraphics[width=\paperwidth]{screen_simulink.png}
+        };
+    \end{tikzpicture}%
+}
+\begin{frame}[plain]
+    \titlepage
+\end{frame}
+}
+
+% ------------------------------------------------------------------------------
+% Table of Contents Slide
+% ------------------------------------------------------------------------------
+{
+\setbeamertemplate{headline}{}
+\begin{frame}{Table of Contents}
+    \small
+    \tableofcontents[hideallsubsections]
+\end{frame}
+}
+
+% ==============================================================================
+% SECTIONS MODULAIRES
+% ==============================================================================
+\input{sections/01_introduction}
+\input{sections/02_dataset_validation}
+\section{System Modeling}
+\input{sections/03_modele_lineaire}
+
+\end{document}

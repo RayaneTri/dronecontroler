@@ -3,6 +3,26 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))  # chemins relatifs au doss
 import numpy as np
 import matplotlib.pyplot as plt
 
+plt.rcParams.update({
+    "figure.figsize": (16, 9),
+    "figure.dpi": 120,
+    "savefig.dpi": 300,
+    "font.size": 24,
+    "axes.titlesize": 30,
+    "axes.labelsize": 26,
+    "xtick.labelsize": 22,
+    "ytick.labelsize": 22,
+    "legend.fontsize": 22,
+    "axes.linewidth": 2.2,
+    "lines.linewidth": 4,
+    "xtick.major.width": 2,
+    "ytick.major.width": 2,
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+})
+
+FIGURES_DIR = os.path.join("presentation", "figures")
+
 # 1. Chargement des données
 print("Chargement des données...")
 u = np.loadtxt("bdd_in_mat_05.csv", delimiter=",")   # Entrée commande (3000, 2000)
@@ -49,14 +69,35 @@ for t in range(len(u_test) - 1):
 Ts = 0.05
 temps = np.arange(len(u_test)) * Ts
 
-plt.figure(figsize=(10, 5))
-plt.plot(temps, y_reel, label="Mesure réelle (Simulink)", color="black", alpha=0.7)
-plt.plot(temps, y_modele, label="Prédiction modèle linéaire", color="red", linestyle="--")
-plt.xlabel("Temps (s)")
-plt.ylabel("Accélération a_z (m/s²)")
-plt.title(f"Validation du modèle linéaire : a={a:.4f}, b={b:.4f}, c={c:.4f}")
-plt.legend()
-plt.grid(True, linestyle="--", alpha=0.5)
+plt.figure(figsize=(16, 9), dpi=120)
+plt.plot(
+    temps,
+    y_reel,
+    label="Measured output (Simulink)",
+    color="#1769aa",
+    linewidth=4,
+)
+plt.plot(
+    temps,
+    y_modele,
+    label="Least-squares model prediction",
+    color="#c62828",
+    linestyle="--",
+    linewidth=4,
+)
+plt.xlabel("Time (s)")
+plt.ylabel(r"Vertical acceleration $a_z$ (m/s$^2$)")
+plt.title(
+    f"Least-Squares Linear Model Validation "
+    f"(a={a:.4f}, b={b:.4f}, c={c:.4f})",
+    pad=20,
+    fontweight="bold",
+)
+plt.legend(frameon=True, framealpha=0.95)
+plt.grid(True, linestyle="--", linewidth=1.5, alpha=0.4)
 plt.tight_layout()
+plt.savefig(
+    os.path.join(FIGURES_DIR, "least_squares_model_validation.png"),
+    bbox_inches="tight",
+)
 plt.show()
-

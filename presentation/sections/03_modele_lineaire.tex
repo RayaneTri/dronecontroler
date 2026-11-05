@@ -1,0 +1,72 @@
+% ==============================================================================
+% SECTION 2: LINEAR MODELING & IDENTIFICATION
+% ==============================================================================
+\begin{frame}{System Modeling}
+    \framesubtitle{Linear Model: Hammerstein Approach}
+    \begin{columns}[T]
+        \begin{column}{0.5\textwidth}
+            \begin{block}{Static Characteristic $N(u)$}
+                3rd-order polynomial identified on steady-state regimes:
+                \begin{equation*}
+                    v(t) = N(u) = a_3 u^3 + a_2 u^2 + a_1 u + a_0
+                \end{equation*}
+                \textbf{Tau identification}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+
+                \centering
+                \includegraphics[
+                    width=\linewidth,
+                    height=2.6cm,
+                    keepaspectratio
+                ]{regression sur caracteristique statique.png}
+
+
+                \centering
+                \includegraphics[
+                    width=\linewidth,
+                    height=5.0cm,
+                    keepaspectratio
+                ]{hammerstein_model_validation.png}
+                \includegraphics[
+                width=\linewidth,
+                height=2.75cm,
+                keepaspectratio
+            ]{least_squares_model_validation.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{System Modeling}
+    \framesubtitle{Linear Model: Least Square Method}
+    \begin{columns}[T]
+        \begin{column}{0.52\textwidth}
+            \begin{block}{Theorical analysis}
+                
+            \end{block}
+
+            \begin{block}{Least-squares criterion}
+                \begin{equation*}
+                    \hat{\boldsymbol{a}}
+                    = \underset{\boldsymbol{a}}{\arg\min}
+                    \sum_{i=1}^{N}
+                    \left(y_{\infty,i} - \hat{y}_\infty(u_i)\right)^2
+                \end{equation*}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \centering
+
+            \vspace{0.15cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=2.75cm,
+                keepaspectratio
+            ]{least_squares_model_validation.png}
+        \end{column}
+    \end{columns}
+\end{frame}
