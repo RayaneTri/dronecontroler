@@ -11,7 +11,7 @@ addpath(fullfile(here, '..', 'Matlab files'));  % random_init.m, UAV_model.slx
 
 random_init;                        % définit Ts = 0.05 et les graines du bruit
 
-experience_nbr = 3000;
+experience_nbr = 3000;              % 3000 pour faire comme bdd_int/out
 batch_size     = 100;               % simulations en mémoire avant écriture
 N              = 2000;              % échantillons par expérience (comme bdd_in_mat)
 vary_noise     = true;              % nouvelles graines de bruit à chaque expérience
