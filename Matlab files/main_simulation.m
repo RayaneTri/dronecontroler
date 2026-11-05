@@ -4,7 +4,7 @@ random_init ;
 script_dir = fileparts(mfilename('fullpath'));
 if ispc
     venv_python = 'C:\Users\strig\dronecontroler\.venv\Scripts\python.exe';
-elseif ismac
+elseif ismac || isunix
     venv_python = fullfile(script_dir, '..', '.venv', 'bin', 'python');
 else
     error('main_simulation:UnsupportedOS', ...
@@ -14,12 +14,8 @@ pyenv('Version', venv_python);
 
 addpath(fileparts(mfilename('fullpath')));
 commande_system = Commande( ...
-    [0, 5, 10], ...
-    [0, 0.5, -0.2], ...
-    0.05, ...
-    [], ...
-    -9.81, ...
-    true);
+    [0 0 0; 0 0 0.5; 0 0 -0.2], ...
+    [0, 5, 10]);
 
 % 2. Choix du contrôleur
 % true  : Modèle linéaire (LQR / LinearModel)
@@ -41,7 +37,7 @@ if use_linear_model
     mpc_system = linear_system; % Pour compatibilité si le bloc Simulink utilise mpc_system
 else
     disp('Initialisation du contrôleur MPC (RNN PyTorch)...');
-    model_path = 'model.ckpt';
+    model_path = 'model64.ckpt';
     mpc_system = MPC(model_path, Q, R, ekf, horizon_N, V, W);
     %linear_system = mpc_system;
 end

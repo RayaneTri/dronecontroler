@@ -5,7 +5,7 @@ function y = mpc_internal_state(varargin)
 %   y = mpc_internal_state(u)  idem ; l'argument u est utilisé pour forcer l'ordre
 %                              d'exécution Simulink (dépendance de données).
 %
-%   Sortie : y = [az; vz; z] (vecteur colonne 3x1 double, unités physiques)
+%   Sortie : y = [ax;ay;az;vx;vy;vz;x;y;z] (vecteur colonne 9x1 double, unités physiques)
 
 % 1. Récupération de l'objet depuis le Workspace de base
 controller = evalin('base', 'mpc_system');
@@ -28,6 +28,6 @@ else
     y = double(raw_y);
 end
 
-% 5. Force la forme en vecteur colonne 3x1
-y = reshape(y, [3, 1]);
+% 5. Force la forme en vecteur colonne 9x1
+y = reshape(y, [9, 1]);
 end

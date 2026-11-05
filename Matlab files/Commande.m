@@ -4,15 +4,23 @@ classdef Commande < handle
     end
 
     methods
-        function obj = Commande(temps, positions, Ts, vitesses, acc_initiale, borner)
+        function obj = Commande(points, temps, v_moy, duree, t0)
+            % points : matrice N x 3 de points de passage (x, y, z)
+            % temps  : instants de passage (optionnel, [] pour allocation automatique)
+            % v_moy  : vitesse moyenne si temps non donne (m/s)
+            % duree  : duree totale si temps non donne (prioritaire sur v_moy, [] pour ignorer)
+            % t0     : instant de depart si temps non donne
+            if nargin < 2
+                temps = [];
+            end
+            if nargin < 3 || isempty(v_moy)
+                v_moy = 1.0;
+            end
             if nargin < 4
-                vitesses = [];
+                duree = [];
             end
-            if nargin < 5
-                acc_initiale = 0.0;
-            end
-            if nargin < 6
-                borner = false;
+            if nargin < 5 || isempty(t0)
+                t0 = 0.0;
             end
 
             module_folder = fileparts(mfilename('fullpath'));
@@ -21,28 +29,42 @@ classdef Commande < handle
                 insert(python_path, int32(0), module_folder);
             end
 
-            py_module = py.importlib.import_module('commande');
-            py_temps = py.list(num2cell(reshape(double(temps), 1, [])));
-            py_positions = py.list(num2cell(reshape(double(positions), 1, [])));
+            py_module = py.importlib.import_module('command_space');
 
-            if isempty(vitesses)
-                py_vitesses = py.None;
+            points = double(points);
+            if size(points, 2) ~= 3
+                error('Commande:BadPoints', 'points doit etre de dimension N x 3');
+            end
+            n = size(points, 1);
+            % points.' (3 x N) en ordre colonne = ordre ligne de la matrice N x 3
+            py_points = py.numpy.reshape( ...
+                py.numpy.array(num2cell(reshape(points.', 1, []))), ...
+                py.tuple({int32(n), int32(3)}));
+
+            if isempty(temps)
+                py_temps = py.None;
             else
-                py_vitesses = py.list(num2cell(reshape(double(vitesses), 1, [])));
+                py_temps = py.numpy.array(num2cell(reshape(double(temps), 1, [])));
             end
 
-            obj.py_commande = py_module.COMMANDE( ...
-                py_temps, ...
-                py_positions, ...
-                double(Ts), ...
-                py_vitesses, ...
-                double(acc_initiale), ...
-                py.bool(logical(borner)));
+            if isempty(duree)
+                py_duree = py.None;
+            else
+                py_duree = double(duree);
+            end
+
+            obj.py_commande = py_module.TRAJECTOIRE_ESPACE( ...
+                py_points, ...
+                pyargs('temps', py_temps, ...
+                       'v_moy', double(v_moy), ...
+                       'duree', py_duree, ...
+                       't0', double(t0)));
         end
 
-        function y = position(obj, t)
-            py_y = obj.py_commande.position(double(t));
-            y = double(py_y);
+        function p = position(obj, t)
+            % Position [x y z] a l'instant t (scalaire) -> vecteur ligne 1 x 3
+            py_p = obj.py_commande.position(double(t));
+            p = reshape(double(py_p.tolist()), 1, []);
         end
     end
 end
