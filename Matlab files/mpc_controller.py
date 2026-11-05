@@ -145,81 +145,104 @@ class model_nn(L.LightningModule):
         return opt
 
 class MPC:
+    """
+    MPC sur le modèle RNN : entrées u = consignes [z_ref, phi_ref, theta_ref, psi_ref] du contrôleur interne,
+    sorties du RNN = accélérations [ax, ay, az], intégrées en vitesses v et positions p = [x, y, z].
+    Coût : sum_k  Q ||p_k - r_k||^2 + R ||u_k - u_k_minus_1||^2
+    """
     def __init__(self, model_path, Q, R, use_ekf, N=20, V=1, W=1):
         self.model = model_nn.load_from_checkpoint(model_path, map_location="cpu")
         self.model.eval()
         self.model.requires_grad_(False)
         self.use_ekf = use_ekf
+        self.n_u = self.model.hparams.input_size                       # 4 consignes
+        self.n_a = self.model.hparams.output_size                      # 3 accélérations
 
-        self.u_m, self.u_s = -0.0023, 0.5731                           # normalisation de la commande u
-        self.az_m, self.az_s = -9.7708, 12.5953                        # normalisation de az (sortie du RNN)
+        self.u_m = torch.tensor([1.499473, -0.000128, 0.000055, -0.000685])   # z_ref, phi_ref, theta_ref, psi_ref
+        self.u_s = torch.tensor([0.576533, 0.173159, 0.173025, 0.288451])
+        self.a_m = torch.tensor([-0.000286, 0.000850, -0.002871])             # ax, ay, az
+        self.a_s = torch.tensor([1.298574, 1.310540, 2.559979])
+
+        # Bornes des consignes : plages vues à l'entraînement (au-delà, le RNN extrapole)
+        self.u_min = torch.tensor([0.5, -0.3, -0.3, -0.5])
+        self.u_max = torch.tensor([2.5, 0.3, 0.3, 0.5])
+
         self.Te = 0.05
         self.filter = EKF(self.model, q=V, r=W, dt=self.Te,
-                          u_mean=self.u_m, u_std=self.u_s, acc_mean=self.az_m, acc_std=self.az_s)
+                          u_mean=self.u_m.numpy(), sr_mean=self.a_m.numpy(), u_std=self.u_s.numpy(), sr_std=self.a_s.numpy())
 
         self.N = N
         self.Q, self.R = Q, R
-        self.U = torch.zeros(N, requires_grad=True)
+        u_0 = (self.u_min + self.u_max) / 2                            # consigne de départ : z_ref = 1.5, angles nuls
+        self.U = u_0.repeat(N, 1).requires_grad_(True)                 # (N, n_u)
 
-        # État interne : h_k (état caché du RNN, normalisé) ; az_k, vz_k, z_k en unités physiques
-        self.h_k = torch.zeros(1, 1, 16)
-        self.az_k = 0.0
-        self.vz_k = 0.0
-        self.z_k = 0.0
+        # État interne : h_k (état caché du RNN, normalisé) ; a_k, v_k, p_k (x, y, z) en unités physiques
+        self.h_k = torch.zeros(1, 1, self.model.hparams.hidden_size)
+        self.a_k = np.zeros(self.n_a)
+        self.v_k = np.zeros(self.n_a)
+        self.p_k = np.zeros(self.n_a)
 
-        self.u_prev = 0.0                                              # commande appliquée au pas précédent
+        self.u_prev = u_0.clone()                                      # commande appliquée au pas précédent (n_u,)
         self.opt = torch.optim.Adam([self.U], lr=0.05)
 
     def step_torch(self, h, u):
-        x = u.reshape(1, 1, 1)
+        """Un pas du RNN : u normalisée (n_u,) -> nouvel état caché et accélérations normalisées (n_a,)"""
+        x = u.reshape(1, 1, -1)
         _, h_new = self.model.rnn(x, h)
-        y = self.model.head(h_new[-1])
+        y = self.model.head(h_new[-1]).reshape(-1)
         return h_new, y
 
-    def J(self, U, r, h0, vz_0, z_0):
+    def J(self, U, r, h0, v_0, p_0):
         h_k = h0
-        vz_k = vz_0
-        z_k = z_0
+        v_k = torch.as_tensor(v_0, dtype=torch.float32)
+        p_k = torch.as_tensor(p_0, dtype=torch.float32)
         cout = 0.0
         for k in range(self.N):
-            h_k, az_k = self.step_torch(h_k, (U[k] - self.u_m) / self.u_s)
-            az_k = az_k * self.az_s + self.az_m
-            vz_k = vz_k + az_k * self.Te
-            z_k = z_k + vz_k * self.Te
-            
-            U_prec = U[k-1] if k == 0 else self.u_prev
-            cout += self.Q * (z_k - r[k]) ** 2 + self.R * (U[k]-U_prec) ** 2
+            h_k, a_k = self.step_torch(h_k, (U[k] - self.u_m) / self.u_s)
+
+            a_k = a_k * self.a_s + self.a_m
+            v_k = v_k + a_k * self.Te
+            p_k = p_k + v_k * self.Te
+
+            U_prec = self.u_prev if k == 0 else U[k-1]
+            cout_q = torch.sum((p_k - r[k]) ** 2)
+            cout = cout + self.Q * cout_q + self.R * torch.sum((U[k] - U_prec) ** 2)
         return cout
 
     def internal_state(self):
-        """État interne courant [az, vz, z] en unités physiques."""
-        return np.array([float(self.az_k), float(self.vz_k), float(self.z_k)], dtype=np.float64)
+        """État interne courant [ax, ay, az, vx, vy, vz, x, y, z] en unités physiques."""
+        return np.concatenate([self.a_k, self.v_k, self.p_k]).astype(np.float64)
 
-    def step(self, r, az, vz, z):
+    def step(self, r, a, v, p):
+        """
+        r : consigne de position sur l'horizon, (N, 3) [x, y, z] ou liste à plat x1 y1 z1 x2 y2 z2 ...
+        a, v, p : mesures (3,) [ax, ay, az], [vx, vy, vz], [x, y, z]
+        Renvoie u (n_u,) : consignes [z_ref, phi_ref, theta_ref, psi_ref] à appliquer
+        """
         # 1. État interne à l'instant k, à partir de l'état en k-1 et de la commande appliquée au pas précédent u_{k-1}
         if self.use_ekf:
-            # EKF : prédiction par le modèle + correction avec les mesures (az, vz, z)
-            self.filter.ekf([az, vz, z], self.u_prev)
-            self.h_k, self.az_k, self.vz_k, self.z_k = self.filter.x0()
+            # EKF : prédiction par le modèle + correction avec les mesures (a, v, p)
+            self.filter.ekf(np.concatenate([np.ravel(a), np.ravel(v), np.ravel(p)]), self.u_prev.numpy())
+            self.h_k, self.a_k, self.v_k, self.p_k = self.filter.x0()
         else:
             # Boucle ouverte : prédiction par le modèle seul (mêmes équations que J), les mesures sont ignorées
             with torch.no_grad():
-                self.h_k, az_n = self.step_torch(self.h_k, torch.tensor((self.u_prev - self.u_m) / self.u_s))
-            self.az_k = az_n.item() * self.az_s + self.az_m
-            self.vz_k = self.vz_k + self.az_k * self.Te
-            self.z_k = self.z_k + self.vz_k * self.Te
+                self.h_k, a_n = self.step_torch(self.h_k, (self.u_prev - self.u_m) / self.u_s)
+            self.a_k = (a_n * self.a_s + self.a_m).numpy().astype(np.float64)
+            self.v_k = self.v_k + self.a_k * self.Te
+            self.p_k = self.p_k + self.v_k * self.Te
 
         # 2. Optimisation de la séquence de commandes à partir de l'état estimé
-        r = torch.as_tensor(r, dtype=torch.float32).flatten()
+        r = torch.as_tensor(np.asarray(r, dtype=np.float32)).reshape(-1, self.n_a)   # (N, 3)
         for _ in range(50):
             self.opt.zero_grad()
-            L = self.J(self.U, r, self.h_k, self.vz_k, self.z_k)
+            L = self.J(self.U, r, self.h_k, self.v_k, self.p_k)
             L.backward()
             self.opt.step()
             with torch.no_grad():
-                self.U.clamp_(-1, 1)
-        u = self.U[0].detach().item()
+                self.U.clamp_(self.u_min, self.u_max)
+        u = self.U[0].detach().clone()
         self.u_prev = u
         with torch.no_grad():
             self.U[:-1] = self.U[1:].clone()                           # warm start pour le pas suivant
-        return u
+        return u.numpy().astype(np.float64)
