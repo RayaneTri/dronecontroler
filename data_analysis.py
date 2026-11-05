@@ -4,6 +4,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Style for figures used in presentations: large text, strong contrast, and
+# sufficient resolution for projection.
+plt.rcParams.update({
+    "figure.figsize": (16, 9),
+    "figure.dpi": 120,
+    "savefig.dpi": 300,
+    "font.size": 24,
+    "axes.titlesize": 30,
+    "axes.labelsize": 26,
+    "xtick.labelsize": 22,
+    "ytick.labelsize": 22,
+    "legend.fontsize": 22,
+    "axes.linewidth": 2.2,
+    "lines.linewidth": 4,
+    "xtick.major.width": 2,
+    "ytick.major.width": 2,
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+})
+
 TE = 0.05      # période d'échantillonnage (s)
 T_MIN = 1.5    # durée minimale d'un échelon (s)
 DELTA_MIN = 0.5  # variation de sortie minimale pour mesurer tau
@@ -66,12 +86,22 @@ print(f"tau moyen = {tau_moy:.4g} s")
 df.to_csv("echelons_longs.csv", index=False)
 
 # Caractéristique statique y∞ = f(u) : points seuls, très petits vu leur nombre
-plt.figure()
-plt.scatter(df["amplitude"], df["y_fin"], s=1)
+plt.figure(figsize=(16, 9), dpi=120)
+plt.scatter(
+    df["amplitude"],
+    df["y_fin"],
+    s=70,
+    alpha=0.8,
+    color="#1769aa",
+    edgecolors="white",
+    linewidths=0.6,
+)
 plt.xlabel("u (amplitude de l'échelon)")
 plt.ylabel("y∞ (sortie en fin d'échelon)")
-plt.title("Caractéristique statique y∞ = f(u)")
-plt.grid(True)
+plt.title("Caractéristique statique $y_\\infty = f(u)$", pad=20, fontweight="bold")
+plt.grid(True, linewidth=1.5, alpha=0.35)
+plt.tight_layout()
+plt.savefig("y_infini_en_fct_u_(avec_filtrage).png", bbox_inches="tight")
 plt.show()
 
 # Régression cubique : les moindres carrés minimisent la RMSE
@@ -87,12 +117,29 @@ print(f"RMSE = {rmse:.4g}")
 
 # Superposition du modèle au nuage de points
 u_lin = np.linspace(df["amplitude"].min(), df["amplitude"].max(), 200)
-plt.figure()
-plt.scatter(df["amplitude"], df["y_fin"], s=1, label="mesures")
-plt.plot(u_lin, Y_inf(u_lin), "r", label=f"cubique (RMSE = {rmse:.3g})")
+plt.figure(figsize=(16, 9), dpi=120)
+plt.scatter(
+    df["amplitude"],
+    df["y_fin"],
+    s=70,
+    alpha=0.8,
+    color="#1769aa",
+    edgecolors="white",
+    linewidths=0.6,
+    label="Mesures",
+)
+plt.plot(
+    u_lin,
+    Y_inf(u_lin),
+    color="#c62828",
+    linewidth=5,
+    label=f"Régression cubique (RMSE = {rmse:.3g})",
+)
 plt.xlabel("u (amplitude de l'échelon)")
 plt.ylabel("y∞ (sortie en fin d'échelon)")
-plt.title("Régression cubique y∞ = f(u)")
-plt.legend()
-plt.grid(True)
+plt.title("Régression cubique $y_\\infty = f(u)$", pad=20, fontweight="bold")
+plt.legend(frameon=True, framealpha=0.95, loc="best")
+plt.grid(True, linewidth=1.5, alpha=0.35)
+plt.tight_layout()
+plt.savefig("y_infini_en_fct_u_(regression_cubique).png", bbox_inches="tight")
 plt.show()

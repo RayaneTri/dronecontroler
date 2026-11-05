@@ -1,7 +1,7 @@
 % Génère un jeu de données entrée/sortie en excitant le drone par APRBS
 %
 % experience_nbr simulations, chacune avec un tirage APRBS différent (seed = numéro
-% de l'expérience). Tout est sauvé dans data/prbs_data.mat (v7.3) :
+% de l'expérience). Tout est sauvé dans data/prbs_data.mat (v7) :
 %   inputs  : experience_nbr x N x 4  (U1..U4)
 %   outputs : experience_nbr x N x 12 (phi..w_dot_z, sans positions ni vitesses)
 % une ligne = une expérience, une colonne = un pas de temps Ts (temps non sauvé).
@@ -11,7 +11,7 @@ addpath(fullfile(here, '..', 'Matlab files'));  % random_init.m, UAV_model.slx
 
 random_init;                        % définit Ts = 0.05 et les graines du bruit
 
-experience_nbr = 3000;
+experience_nbr = 3000;              % 3000 pour faire comme bdd_int/out
 batch_size     = 100;               % simulations en mémoire avant écriture
 N              = 2000;              % échantillons par expérience (comme bdd_in_mat)
 vary_noise     = true;              % nouvelles graines de bruit à chaque expérience
@@ -34,11 +34,11 @@ out_cols  = 7:18;                   % on ne garde pas x, y, z, vx, vy, vz
 data_dir = fullfile(here, 'data');
 if ~exist(data_dir, 'dir'), mkdir(data_dir); end
 mat_file = fullfile(data_dir, 'prbs_data.mat');
-if exist(mat_file, 'file'), delete(mat_file); end
-m = matfile(mat_file, 'Writable', true);
-m.in_names  = in_names;
-m.out_names = out_names(out_cols);
-m.Ts = Ts; m.U_hover = U_hover; m.amp = amp; m.opts = opts;
+
+% Tout est gardé en mémoire puis sauvé en v7 à la fin (matfile impose le v7.3)
+inputs  = zeros(experience_nbr, N, numel(in_cols), 'single');
+outputs = zeros(experience_nbr, N, numel(out_cols), 'single');
+opts_sav = opts;                    % opts.seed est modifié dans la boucle
 
 mdl = 'system_simulation_training_creator';
 load_system(mdl);
@@ -65,7 +65,7 @@ for b0 = 1:batch_size:experience_nbr
     out = sim(in(1:n_exp), 'UseFastRestart', matlab.lang.OnOffSwitchState(~vary_noise), ...
               'ShowProgress', 'off');
 
-    % Bloc (n_exp x N x signal), ajouté à la suite dans le .mat
+    % Bloc (n_exp x N x signal)
     rows = zeros(n_exp, N, numel(col_names), 'single');
     for j = 1:n_exp
         if ~isempty(out(j).ErrorMessage)
@@ -76,13 +76,8 @@ for b0 = 1:batch_size:experience_nbr
                'Expérience %d : simout de taille %s', exp_idx(j), mat2str(size(data)));
         rows(j, :, :) = reshape(data, 1, N, []);
     end
-    if b0 == 1
-        m.inputs  = rows(:, :, in_cols);
-        m.outputs = rows(:, :, out_cols);
-    else
-        m.inputs(exp_idx, 1:N, 1:numel(in_cols))   = rows(:, :, in_cols);
-        m.outputs(exp_idx, 1:N, 1:numel(out_cols)) = rows(:, :, out_cols);
-    end
+    inputs(exp_idx, :, :)  = rows(:, :, in_cols);
+    outputs(exp_idx, :, :) = rows(:, :, out_cols);
 
     if b0 == 1
         Y_first = squeeze(rows(1, :, 1:18));      % pour l'affichage
@@ -90,6 +85,12 @@ for b0 = 1:batch_size:experience_nbr
     end
     fprintf('%d / %d expériences\n', exp_idx(end), experience_nbr);
 end
+
+S = struct('inputs', inputs, 'outputs', outputs, ...
+           'in_names', {in_names}, 'out_names', {out_names(out_cols)}, ...
+           'Ts', Ts, 'U_hover', U_hover, 'amp', amp, 'opts', opts_sav);
+save(mat_file, '-struct', 'S', '-v7');
+clear S
 
 % Affichage de la première expérience
 tY = (0:N-1)' * Ts;
