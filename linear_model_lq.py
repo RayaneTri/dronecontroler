@@ -4,6 +4,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+plt.rcParams.update({
+    "figure.figsize": (16, 9),
+    "figure.dpi": 120,
+    "savefig.dpi": 300,
+    "font.size": 24,
+    "axes.titlesize": 30,
+    "axes.labelsize": 26,
+    "xtick.labelsize": 22,
+    "ytick.labelsize": 22,
+    "legend.fontsize": 22,
+    "axes.linewidth": 2.2,
+    "lines.linewidth": 4,
+    "xtick.major.width": 2,
+    "ytick.major.width": 2,
+    "xtick.major.size": 8,
+    "ytick.major.size": 8,
+})
+
+FIGURES_DIR = os.path.join("presentation", "figures")
+
 TS = 0.05      # période d'échantillonnage (s)
 
 # Commandes et sorties filtrées (une ligne = un essai)
@@ -56,6 +76,38 @@ rmse = np.sqrt(np.mean((y - y_pred)**2))
 print(f"tau = {tau:.4g} s, a = {a:.4g}")
 print(f"Prédiction {y_pred.shape} enregistrée, RMSE = {rmse:.4g}")
 
+# Comparison between measured output and Hammerstein prediction.
+i = 10
+t = np.arange(u.shape[1]) * TS
+fig, ax = plt.subplots(figsize=(16, 9), dpi=120)
+ax.plot(
+    t,
+    y[i],
+    label="Measured output",
+    color="#1769aa",
+    linewidth=4,
+    zorder=2,
+)
+ax.plot(
+    t,
+    y_pred[i],
+    label="Hammerstein model",
+    color="#c62828",
+    linewidth=3,
+    linestyle="--",
+    zorder=3,
+)
+ax.set_ylabel("Output $y$")
+ax.set_xlabel("Time (s)")
+ax.legend(frameon=True, framealpha=0.95, loc="upper right")
+fig.suptitle("Hammerstein Model Validation", fontsize=30, fontweight="bold")
+ax.grid(True, linestyle="--", linewidth=1.5, alpha=0.4)
+fig.tight_layout(rect=(0, 0, 1, 0.94))
+fig.savefig(
+    os.path.join(FIGURES_DIR, "hammerstein_model_validation.png"),
+    bbox_inches="tight",
+)
+
 def simule_lq(yc, a):
     """Boucle fermée LQ sur le modèle linéaire (un essai par ligne) : commandes et état prédit."""
     x = np.empty_like(yc)
@@ -74,29 +126,24 @@ rmse_lq = np.sqrt(np.mean((yc - x_lq)**2))
 print(f"Commandes LQ {u_cmd.shape} enregistrées, {np.mean(np.abs(u_cmd) >= U_MAX):.1%} saturées, "
       f"RMSE consigne/état = {rmse_lq:.4g}")
 
-# Comparaison mesure / modèle sur un essai
-i = 10
-t = np.arange(u.shape[1]) * TS
-fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-ax1.plot(t, u[i])
-ax1.set_ylabel("entrée u")
-ax2.plot(t, y[i], label="mesure")
-ax2.plot(t, y_pred[i], label="modèle")
-ax2.set_ylabel("sortie y")
-ax2.set_xlabel("temps (s)")
-ax2.legend()
-
 # Boucle fermée LQ : consigne / état / commande
 t_c = np.arange(yc.shape[1]) * TS
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-fig.suptitle("Boucle fermée LQ")
-ax1.plot(t_c, yc[0], drawstyle="steps-post", label="consigne")
-ax1.plot(t_c, x_lq[0], label="état x_lq")
-ax1.set_ylabel("sortie y")
-ax1.legend()
-ax2.plot(t_c, u_cmd[0])
-ax2.axhline(U_MAX, color="k", linestyle="--", linewidth=0.8)
-ax2.axhline(-U_MAX, color="k", linestyle="--", linewidth=0.8)
-ax2.set_ylabel("commande u")
-ax2.set_xlabel("temps (s)")
+fig.suptitle("LQ Closed-Loop Control", fontsize=30, fontweight="bold")
+ax1.plot(t_c, yc[0], drawstyle="steps-post", label="Reference", linewidth=4)
+ax1.plot(t_c, x_lq[0], label="State $x_{LQ}$", linewidth=4)
+ax1.set_ylabel("Output $y$")
+ax1.legend(frameon=True, framealpha=0.95)
+ax2.plot(t_c, u_cmd[0], linewidth=4)
+ax2.axhline(U_MAX, color="black", linestyle="--", linewidth=2)
+ax2.axhline(-U_MAX, color="black", linestyle="--", linewidth=2)
+ax2.set_ylabel("Control $u$")
+ax2.set_xlabel("Time (s)")
+for axis in (ax1, ax2):
+    axis.grid(True, linestyle="--", linewidth=1.5, alpha=0.4)
+fig.tight_layout(rect=(0, 0, 1, 0.94))
+fig.savefig(
+    os.path.join(FIGURES_DIR, "lq_closed_loop.png"),
+    bbox_inches="tight",
+)
 plt.show()
