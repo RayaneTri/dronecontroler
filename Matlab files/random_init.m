@@ -2,7 +2,7 @@
 s = RandStream('mt19937ar','Seed','shuffle');
 RandStream.setGlobalStream(s);
 
-Ts = 0.01; % Maybe not the right value...
+Ts = 0.05; % Maybe not the right value...
 
 g_noise = 0.01; % Global noise gain
 
