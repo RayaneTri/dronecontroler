@@ -4,3 +4,4 @@
 \beamer@sectionintoc {3}{System Modeling}{5}{0}{3}
 \beamer@sectionintoc {4}{First RNN}{7}{0}{4}
 \beamer@sectionintoc {5}{Z-axis control}{9}{0}{5}
+\beamer@sectionintoc {6}{MPC control}{11}{0}{6}

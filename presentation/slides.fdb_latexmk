@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1793954240.54649 "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" "slides.pdf" "slides" 1793954244.56295 0
-  "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" 1793954062.76433 4286 21ad66e7dacb84931f532a7d2ba45265 ""
+["pdflatex"] 1793954784.9446 "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" "slides.pdf" "slides" 1793954789.0716 0
+  "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" 1793954776.45542 4340 e62135e48a6918d4851fb2f85a87a3e9 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/eccc1000.tfm" 1136768653 3072 0e825b3b77feef5bf88d50fba1209c90 ""
@@ -271,12 +271,13 @@
   "sections/03_modele_lineaire.tex" 1793951401.11197 2922 e58779f50c66a980d7434f7e5136fd04 ""
   "sections/04_premier_rnn.tex" 1793954170.93684 3266 f280682fc34e540d04bcb5b05ab6356c ""
   "sections/05_command_design.tex" 1793952747.39146 1278 43d1da4174043692d43f1733f11aacf8 ""
-  "sections/06_lq_control.tex" 1793954096.13551 1989 bbd97cf641c364d4f02709a4d3df2f13 ""
-  "slides.aux" 1793954244.48192 3281 4d6fe9a76cdf53de502990d48fa14138 "pdflatex"
-  "slides.nav" 1793954244.48286 1904 0a847258ed6ef1a786e0809ec8abfb11 "pdflatex"
-  "slides.out" 1793954244.48271 567 4bd1bbabb513a9b9ef4216e0094f8d32 "pdflatex"
-  "slides.tex" 1793954062.76433 4286 21ad66e7dacb84931f532a7d2ba45265 ""
-  "slides.toc" 1793954244.48288 278 c0fca5043f2d00d9d161355acfecf6f0 "pdflatex"
+  "sections/06_lq_control.tex" 1793954681.52246 2142 5f4a1976647e8542e976093e87919d6d ""
+  "sections/07_mpc_control.tex" 1793954776.45022 1281 4357ae374af01e832666e6b551d87b21 ""
+  "slides.aux" 1793954788.99131 3688 31aa8f96a9dbb763aa1b729cd8cb58a1 "pdflatex"
+  "slides.nav" 1793954788.99224 2155 87676d83fca53ce36e22944f9aa653af "pdflatex"
+  "slides.out" 1793954788.9921 668 151d103be8356c105b3f4346f56ce495 "pdflatex"
+  "slides.tex" 1793954776.45542 4340 e62135e48a6918d4851fb2f85a87a3e9 ""
+  "slides.toc" 1793954788.99226 326 7b47e1e12192724a4ecbbe5f7e7e8983 "pdflatex"
   (generated)
   "slides.aux"
   "slides.log"

@@ -524,6 +524,11 @@ INPUT ./figures/linear lqr sinewave input.jpeg
 INPUT ./figures/linear lqr sinewave input.jpeg
 INPUT ./figures/linear lqr sinewave input.jpeg
 INPUT ./figures/linear lqr sinewave input.jpeg
+INPUT ./sections/07_mpc_control.tex
+INPUT ./sections/07_mpc_control.tex
+INPUT ./sections/07_mpc_control.tex
+INPUT ./sections/07_mpc_control.tex
+INPUT sections/07_mpc_control.tex
 OUTPUT slides.nav
 OUTPUT slides.toc
 OUTPUT slides.snm
