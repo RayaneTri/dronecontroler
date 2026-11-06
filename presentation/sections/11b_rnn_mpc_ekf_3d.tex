@@ -256,25 +256,15 @@
                 Sinusoidal car path; the drone flies $0.5$\,m above it and
                 climbs to $2$\,m to pass over the bridge ($x\in[24, 27]$\,m).\par}
             \end{block}
-
         \end{column}
 
         \begin{column}{0.60\textwidth}
             \centering
             \includegraphics[
                 width=\linewidth,
-                height=0.66\textheight,
+                height=0.80\textheight,
                 keepaspectratio
             ]{mpc3d_car_tracking.png}
-
-            \begin{exampleblock}{Observations}
-                \scriptsize
-                \begin{itemize}\setlength{\itemsep}{0pt}
-                    \item Close tracking on the 3 axes, no steady-state error
-                    \item Bridge crossed: $z$ climb followed with a small lag
-                    \item Only transient: take-off ($t<2$\,s)
-                \end{itemize}
-            \end{exampleblock}
         \end{column}
     \end{columns}
 \end{frame}
