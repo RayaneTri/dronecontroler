@@ -7,24 +7,22 @@ class EKF:
     EKF sur l'état augmenté (état caché du RNN, vitesse, position) :
         x_k = (hr_k;     (tanh(Wx hr_k_minus_1 + Wu u_k_minus_1 + bxu);
                vx_k;       vx_k_minus_1 + ax_k dt;
-               vy_k;       vy_k_minus_1 + ay_k dt;
-               vz_k;   =   vz_k_minus_1 + az_k dt;                 + wb_k,   wb_k ~ N(0, Q_k)
+               vy_k;   =    vy_k_minus_1 + ay_k dt;          + wb_k,   wb_k ~ N(0, Q_k)                            
                x_k;        x_k_minus_1 + vx_k dt;
                y_k;        y_k_minus_1 + vy_k dt;
-               z_k)        z_k_minus_1 + vz_k dt)
-             with  sr_k = (Wf hr_k + bf) sr_std + sr_mean  et  (ax_k, ay_k, az_k) = sr_k[i_acc]
+               z_k)        z_k  (= sr_k[2], sortie directe du RNN))
+             with  sr_k = (Wf hr_k + bf) sr_std + sr_mean,  (ax_k, ay_k) = sr_k[i_acc]  et  z_k = sr_k[2]
         Euler semi-implicite, même schéma que MPC.J : l'accélération vient du NOUVEL état caché hr_k,
         et la position est intégrée avec la NOUVELLE vitesse v_k.
         y_k = (sr_k;    (Wf hr_k + bf;
                vx_k;      vx_k;
-               vy_k;      vy_k;
-               vz_k;   =  vz_k;                                            + vb_k,   vb_k ~ N(0, R_k)
+               vy_k;      vy_k;              + vb_k,   vb_k ~ N(0, R_k)                                 
                px_k;       px_k;
                py_k;       py_k;
                pz_k)       pz_k)
-             i.e.  y_k = H_k x_k + c + vb_k  with  c = (bf; 0; 0)
+             i.e.  y_k = H_k x_k + c + vb_k  with  c = (bf; 0; 0; 0; 0; 0)
 
-    sr_k[i_acc] = (acc_x, acc_y, acc_z) = (x'', y'', z''), avec i_acc = [0, 1, 2]
+    sr_k[0:3] = (acc_x, acc_y, pz) = (x'', y'', z), avec i_acc = [0, 1] et i_z = 2 (pas de vz dans l'état)
     
     À l'intérieur, u et acc sont normalisés, v et z restent en unités physiques.
     q et r peuvent être des scalaires ou des vecteurs (diagonales de Q_k et R_k).
@@ -44,7 +42,8 @@ class EKF:
         self.n_hr = self.Wx.shape[0] # dimension de l'état caché du RNN
         self.n_sr = self.bf.size # dimension de la sortie du RNN (12)
         self.n_u = self.Wu.shape[1] # dimension de la commande (4)
-        self.i_acc = [0, 1, 2] # indices de (ax, ay, az) dans sr
+        self.i_acc = [0, 1] # indices de (ax, ay) dans sr
+        self.i_z = 2 # indice de z dans sr
 
         # Normalisation par canal (un scalaire est diffusé sur tous les canaux)
         self.u_mean = np.broadcast_to(np.asarray(u_mean, dtype=float), self.n_u)
@@ -52,9 +51,9 @@ class EKF:
         self.sr_mean = np.broadcast_to(np.asarray(sr_mean, dtype=float), self.n_sr)
         self.sr_std = np.broadcast_to(np.asarray(sr_std, dtype=float), self.n_sr)
 
-        self.n_extras = 6
-        self.n_x = self.n_hr + self.n_extras # dimension de x_hat = (hr, vx, vy, vz, x, y, z)
-        self.n_y = self.bf.size + self.n_extras # dimension de y = (sr, vx, vy, vz, x, y, z)
+        self.n_extras = 5
+        self.n_x = self.n_hr + self.n_extras # dimension de x_hat = (hr, vx, vy, x, y, z)
+        self.n_y = self.bf.size + self.n_extras # dimension de y = (sr, vx, vy, px, py, pz)
 
         # State model noise covariance matrix Q_k
         self.Q_k = np.diag(np.broadcast_to(np.asarray(q, dtype=float), self.n_x))
@@ -73,7 +72,7 @@ class EKF:
         self.reset()
 
     def reset(self, x0=None):
-        """Réinitialise l'estimation de l'état (hr, vx, vy, vz, px, py, pz) et sa covariance."""
+        """Réinitialise l'estimation de l'état (hr, vx, vy, px, py, pz) et sa covariance."""
         # The estimated state vector at time k-1
         self.x_hat_k_minus_1 = np.zeros(self.n_x) if x0 is None else np.asarray(x0, dtype=float)
         # State covariance matrix P_k_minus_1
@@ -83,13 +82,14 @@ class EKF:
         """
         Modèle d'état : renvoie x_k = f(x_k_minus_1, u_k_minus_1) (u normalisé)
         """
-        hr, v, p = x[:self.n_hr], x[-6:-3], x[-3:]
+        hr, v, p = x[:self.n_hr], x[-5:-3], x[-3:-1]
         hr_next = np.tanh(self.Wx @ hr + self.Wu @ np.atleast_1d(u) + self.bxu)
         sr = (self.Wf @ hr_next + self.bf) * self.sr_std + self.sr_mean   # sortie du RNN avec le nouvel état caché
-        a = sr[self.i_acc]                                                # (ax_k, ay_k, az_k)
+        a = sr[self.i_acc]                                                # (ax_k, ay_k)
         v_next = v + a * self.dt                                          # Euler semi-implicite (comme MPC.J) :
         p_next = p + v_next * self.dt                                     # la position utilise la nouvelle vitesse
-        return np.concatenate([hr_next, v_next, p_next])
+        z_next = sr[self.i_z]                                             # z est directement une sortie du RNN
+        return np.concatenate([hr_next, v_next, p_next, [z_next]])
 
     def getF(self, x, u):
         """
@@ -100,8 +100,8 @@ class EKF:
         A = np.diag(1 - np.tanh(s)**2) @ self.Wx                # d hr_k / d hr_k_minus_1
         F = np.zeros((self.n_x, self.n_x))
         F[:self.n_hr, :self.n_hr] = A
-        for j, i_a in enumerate(self.i_acc): # axes x, y, z
-            iv, ip = -6 + j, -3 + j # lignes de v_j et p_j
+        for j, i_a in enumerate(self.i_acc): # axes x, y
+            iv, ip = -5 + j, -3 + j # lignes de v_j et p_j
             d_a = self.sr_std[i_a] * (self.Wf[i_a] @ A)         # d a_j_k / d hr_k_minus_1 (a_j_k dépend de hr_k)
             # v_j_k = v_j_k_minus_1 + a_j_k dt
             F[iv, :self.n_hr] = self.dt * d_a
@@ -110,6 +110,8 @@ class EKF:
             F[ip, :self.n_hr] = self.dt**2 * d_a
             F[ip, iv] = self.dt
             F[ip, ip] = 1.0
+        # z_k = sr_k[2] dépend seulement de hr_k
+        F[-1, :self.n_hr] = self.sr_std[self.i_z] * (self.Wf[self.i_z] @ A)
         return F
 
     def getB(self, x, u):
@@ -122,10 +124,11 @@ class EKF:
         dhr = np.diag(1 - np.tanh(s)**2) @ self.Wu              # d hr_k / d u_k_minus_1
         B = np.zeros((self.n_x, self.Wu.shape[1]))
         B[:self.n_hr] = dhr
-        for j, i_a in enumerate(self.i_acc): # axes x, y, z
+        for j, i_a in enumerate(self.i_acc): # axes x, y
             d_a = self.sr_std[i_a] * (self.Wf[i_a] @ dhr)       # d a_j_k / d u_k_minus_1
-            B[-6 + j] = self.dt * d_a
+            B[-5 + j] = self.dt * d_a
             B[-3 + j] = self.dt**2 * d_a
+        B[-1] = self.sr_std[self.i_z] * (self.Wf[self.i_z] @ dhr)
         return B
 
     def ekf(self, y_k, u_k_minus_1):
@@ -133,7 +136,7 @@ class EKF:
         Extended Kalman Filter at step k
 
         INPUT
-            :param y_k Most recent sensor measurement (sr, vx, vy, vz, px, py, pz)
+            :param y_k Most recent sensor measurement (sr, vx, vy, px, py, pz)
             :param u_k_minus_1 The control vector applied at time k-1
 
         OUTPUT
@@ -169,7 +172,7 @@ class EKF:
 
     def step(self, y_k, u_k_minus_1):
         """
-        Un pas d'EKF, renvoie la sortie estimée y_hat_k = (sr, vx, vy, vz, px, py, pz) en unités physiques et son écart-type sigma_y_hat_k
+        Un pas d'EKF, renvoie la sortie estimée y_hat_k = (sr, vx, vy, px, py, pz) en unités physiques et son écart-type sigma_y_hat_k
         """
         x_hat_k, P_k = self.ekf(y_k, u_k_minus_1)
         scale = np.concatenate([self.sr_std, np.ones(self.n_extras)])
@@ -182,9 +185,9 @@ class EKF:
         """
         État estimé courant pour le MPC (après ekf(), x_hat_k_minus_1 contient l'estimation à l'instant k) :
             h : état caché du RNN au format torch (num_layers, batch, n_hr)
-            a : accélérations (ax, ay, az) en m.s-2, numpy (3,) : elles ne sont pas dans x,
+            a : accélérations (ax, ay) en m.s-2, numpy (2,) : elles ne sont pas dans x,
                 on les recalcule à partir de hr_k, comme dans la mesure y_k = Wf hr_k + bf
-            v : vitesses (vx, vy, vz) en m.s-1, numpy (3,)
+            v : vitesses (vx, vy) en m.s-1, numpy (2,)
             p : positions (x, y, z) en m, numpy (3,)
         """
         x = self.x_hat_k_minus_1
@@ -192,4 +195,4 @@ class EKF:
         h = torch.tensor(hr, dtype=torch.float32).reshape(1, 1, -1)
         sr = (self.Wf @ hr + self.bf) * self.sr_std + self.sr_mean   # sortie du RNN dénormalisée
         a = sr[self.i_acc]
-        return h, a, x[-6:-3].copy(), x[-3:].copy()
+        return h, a, x[-5:-3].copy(), x[-3:].copy()
