@@ -158,10 +158,11 @@ class MPC:
         self.n_u = self.model.hparams.input_size                       # 4 consignes
         self.n_a = self.model.hparams.output_size                      # 3 sorties [ax, ay, z]
 
-        self.u_m = torch.tensor([1.499473, -0.000128, 0.000055, -0.000685])   # z_ref, phi_ref, theta_ref, psi_ref
-        self.u_s = torch.tensor([0.576533, 0.173159, 0.173025, 0.288451])
-        self.a_m = torch.tensor([-0.000286, 0.000850, -0.002871])             # ax, ay, az
-        self.a_s = torch.tensor([1.298574, 1.310540, 2.559979])
+        # Statistiques de normalisation de l'entraînement (version_5, affichées par rnn_extended.ipynb > Display results)
+        self.u_m = torch.tensor([1.502333, -0.000792, 0.002138, -0.002166])   # z_ref, phi_ref, theta_ref, psi_ref
+        self.u_s = torch.tensor([0.577639, 0.172674, 0.173350, 0.289042])
+        self.a_m = torch.tensor([0.019727, 0.009098, 1.504876])               # ax, ay, z
+        self.a_s = torch.tensor([1.595419, 1.602934, 0.544539])
 
         # Bornes des consignes : plages vues à l'entraînement (au-delà, le RNN extrapole)
         self.u_min = torch.tensor([0.5, -0.3, -0.3, -0.5])
@@ -217,7 +218,7 @@ class MPC:
     def step(self, r, a, v, p):
         """
         r : consigne de position sur l'horizon, (N, 3) [x, y, z] ou liste à plat x1 y1 z1 x2 y2 z2 ...
-        a, v, p : mesures (3,) [ax, ay, az], [vx, vy, vz], [x, y, z] (az et vz ignorés)
+        a, v, p : mesures [ax, ay(, az)], [vx, vy(, vz)], [x, y, z] (az et vz éventuels ignorés)
         Renvoie u (n_u,) : consignes [z_ref, phi_ref, theta_ref, psi_ref] à appliquer
         """
         # 1. État interne à l'instant k, à partir de l'état en k-1 et de la commande appliquée au pas précédent u_{k-1}
@@ -250,3 +251,89 @@ class MPC:
         with torch.no_grad():
             self.U[:-1] = self.U[1:].clone()                           # warm start pour le pas suivant
         return u.numpy().astype(np.float64)
+
+
+if __name__ == "__main__":
+    # Test ---------------------------------------------------------------------------------------------------------------------------------------------
+    # Le vrai drone est dans Simulink : ici le "système" est simulé par le RNN lui-même,
+    # avec son propre état h_sys, séparé de l'état interne du MPC.
+    from tqdm.auto import tqdm
+    import matplotlib.pyplot as plt
+
+    import os
+    # RNN [z_ref, phi_ref, theta_ref, psi_ref] -> [ax, ay, z] (version_5), chemin relatif à ce fichier
+    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model.ckpt')
+    mpc = MPC(model_path, Q=1, R=1, use_ekf=True, N=20)     # N=10 (0.5 s) est trop court : le MPC diverge
+    Te = mpc.Te
+    T_sim = 200                                         # nombre de pas simulés (T_sim * Te = 10 s)
+    sigma_mes = 0.01                                    # bruit de mesure sur a, v, p
+
+    def systeme(h, v, p, u):
+        """Un pas du système simulé : applique u (consignes physiques) -> nouvel état.
+        a = (ax, ay), v = (vx, vy), p = (x, y, z) : mêmes équations que MPC.J."""
+        with torch.no_grad():
+            h, y_n = mpc.step_torch(h, (torch.as_tensor(u, dtype=torch.float32) - mpc.u_m) / mpc.u_s)
+        sr = (y_n * mpc.a_s + mpc.a_m).numpy().astype(np.float64)       # [ax, ay, z]
+        a = sr[:2]
+        v = v + a * Te
+        p = np.concatenate([p[:2] + v * Te, sr[2:]])
+        return h, a, v, p
+
+    # État initial du système : on applique la commande initiale du MPC (u_prev), comme le MPC le fait à son premier pas
+    rng = np.random.default_rng(0)
+    h_sys = torch.zeros(1, 1, mpc.model.hparams.hidden_size)
+    h_sys, a_sys, v_sys, p_sys = systeme(h_sys, np.zeros(2), np.zeros(3), mpc.u_prev.numpy())
+
+    # Sorties du RNN : [ax, ay, z]. x, y sont intégrés depuis 0 (déplacement par rapport au point de départ),
+    # z est une sortie directe du RNN, donc en absolu : on part de l'altitude initiale du système (~1 m, comme dans le dataset)
+    z_0 = p_sys[2]
+    # Consigne de position [x, y, z], prolongée de N pas pour que la fenêtre de prédiction ne déborde pas à la fin
+    t_full = np.arange(T_sim + mpc.N) * Te
+    r_full = np.stack([
+        np.interp(t_full, [0, 1, 4, 10], [0, 0, 1, 1]),                     # x : +1 m
+        np.interp(t_full, [0, 3, 6, 10], [0, 0, -1, -1]),                   # y : -1 m
+        np.interp(t_full, [0, 1, 3, 10], [z_0, z_0, z_0 + 0.5, z_0 + 0.5]), # z : +0.5 m (absolu)
+    ], axis=1)
+
+    hist = {'p': [], 'p_int': [], 'u': []}
+    for t in tqdm(range(T_sim)):
+        # Mesures bruitées de l'état à l'instant t : a (2,), v (2,), p (3,) (MPC.step n'utilise que a[:2] et v[:2])
+        a_mes, v_mes, p_mes = (x + sigma_mes * rng.standard_normal(x.shape) for x in (a_sys, v_sys, p_sys))
+        u = mpc.step(r_full[t:t + mpc.N], a_mes, v_mes, p_mes)
+
+        hist['p'].append(p_sys.copy())                  # position réelle à l'instant t
+        hist['p_int'].append(mpc.internal_state()[6:9]) # position estimée par le MPC à l'instant t
+        hist['u'].append(u)
+
+        # On applique u au système
+        h_sys, a_sys, v_sys, p_sys = systeme(h_sys, v_sys, p_sys, u)
+
+    p_hist, p_int_hist, u_hist = (np.array(hist[k]) for k in ('p', 'p_int', 'u'))
+    for i, nom in enumerate('xyz'):
+        e = p_hist[:, i] - r_full[:T_sim, i]
+        print(f"{nom} : RMSE {np.sqrt(np.mean(e**2)):.3f} m, erreur finale {e[-1]:+.3f} m, "
+              f"écart état interne / réel max {np.abs(p_int_hist[:, i] - p_hist[:, i]).max():.4f} m")
+
+    # Affichage --------------------------------------------------------------------------------------------------------------------------------------
+    t_axis = np.arange(T_sim) * Te
+    fig, axs = plt.subplots(2, 2, figsize=(12, 7), sharex=True)
+    for i, (ax, nom) in enumerate(zip(axs.flat[:3], 'xyz')):
+        ax.plot(t_axis, r_full[:T_sim, i], 'k--', label="Consigne r")
+        ax.plot(t_axis, p_hist[:, i], color='tab:orange', label="Position réelle")
+        ax.plot(t_axis, p_int_hist[:, i], color='tab:green', linestyle=':', linewidth=2, label="État interne MPC")
+        ax.set_ylabel(f"{nom} [m]")
+        ax.grid(True, alpha=0.3)
+    axs[0, 0].legend()
+    axs[0, 0].set_title("MPC sur le modèle RNN")
+
+    ax = axs[1, 1]
+    for i, nom in enumerate(['z_ref [m]', 'phi_ref [rad]', 'theta_ref [rad]', 'psi_ref [rad]']):
+        ax.step(t_axis, u_hist[:, i], where='post', label=nom)
+    ax.set_title("Commandes u")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+    for ax in axs[1]:
+        ax.set_xlabel("Temps [s]")
+
+    plt.tight_layout()
+    plt.show()
