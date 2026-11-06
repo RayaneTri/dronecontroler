@@ -43,16 +43,29 @@
     \framesubtitle{Linear Model: Least Square Method}
     \begin{columns}[T]
         \begin{column}{0.52\textwidth}
-            \begin{block}{Theorical analysis}
-                
-            \end{block}
 
-            \begin{block}{Least-squares criterion}
+            \begin{block}{Model equations}
+                \begin{align*}
+                    y_k(t+1)
+                        &= a\,y_k(t) + b\,u_k(t) + c \\
+                        &= \boldsymbol{\varphi}_k^{\mathsf T}
+                           \boldsymbol{\theta}.
+                \end{align*}
+                \[
+                    \boldsymbol{\varphi}_k^{\mathsf T} =
+                    \begin{bmatrix} y_k(t) & u_k(t) & 1 \end{bmatrix}
+                    \qquad
+                    \boldsymbol{\theta} =
+                    \begin{bmatrix} a & b & c \end{bmatrix}^{\mathsf T}.
+                \]
+
+                The least-squares estimate is
                 \begin{equation*}
-                    \hat{\boldsymbol{a}}
-                    = \underset{\boldsymbol{a}}{\arg\min}
-                    \sum_{i=1}^{N}
-                    \left(y_{\infty,i} - \hat{y}_\infty(u_i)\right)^2
+                    \boldsymbol{\theta}^{\star}
+                        =
+                        \left(\boldsymbol{\Phi}^{\mathsf T}
+                        \boldsymbol{\Phi}\right)^{-1}
+                        \boldsymbol{\Phi}^{\mathsf T}\boldsymbol{Y}.
                 \end{equation*}
             \end{block}
         \end{column}
