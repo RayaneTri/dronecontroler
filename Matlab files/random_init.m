@@ -3,7 +3,7 @@ s = RandStream('mt19937ar','Seed','shuffle');
 RandStream.setGlobalStream(s);
 
 Ts = 0.05; 
-horizon_N = 15;
+horizon_N = 20;
 
 g_noise = 0.01; % 0.01; % Global noise gain
 

@@ -22,7 +22,7 @@ commande_system = Commande( ...
 % false : MPC non-linéaire (RNN PyTorch)
 use_linear_model = false; 
 
-horizon_N = 15;
+horizon_N = 20;
 
 Q = 100;
 R = 1;
@@ -37,11 +37,10 @@ if use_linear_model
     mpc_system = linear_system; % Pour compatibilité si le bloc Simulink utilise mpc_system
 else
     disp('Initialisation du contrôleur MPC (RNN PyTorch)...');
-    model_path = 'model64.ckpt';
+    model_path = 'model.ckpt';
     mpc_system = MPC(model_path, Q, R, ekf, horizon_N, V, W);
     %linear_system = mpc_system;
 end
-
 % 3. Définir une consigne (référence) pour l'horizon N
 %r_reference = ones(1, horizon_N) * 1.5; 
 
