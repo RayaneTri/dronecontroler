@@ -12,8 +12,8 @@ classdef MPC < handle
             
             % S'assurer que le dossier courant est dans le path Python
             path_list = py.sys.path;
-            if count(path_list, pwd) == 0
-                insert(path_list, int32(0), pwd);
+            if count(path_list, fileparts(mfilename('fullpath'))) == 0
+                insert(path_list, int32(0), fileparts(mfilename('fullpath')));
             end
             
             % Instancier la classe Python mpc_controller.MPC
@@ -21,34 +21,36 @@ classdef MPC < handle
             obj.py_mpc = py.mpc_controller.MPC(model_path, Q, R, ekf, int32(N), V, W);
         end
         
-        function u = step(obj, r, az, vz, z)
-            % Méthode pour appeler l'optimisation MPC
-            % Entrée : r (vecteur de consigne MATLAB de longueur N)
-            
-            % Convertir le tableau MATLAB en liste Python pour la compatibilité
-            r_row = reshape(double(r), 1, []);
-            py_r = py.list(num2cell(r_row));
-            py_az = py.float(double(az));
-            py_vz = py.float(double(vz));
-            py_z = py.float(double(z));
-            
-            % Appeler la méthode step() du script Python
-            py_u = obj.py_mpc.step(py_r, py_az, py_vz, py_z);
-            
-            % Convertir le résultat Python en double MATLAB
-            u = double(py_u);
+        function u = step(obj, r, a, v, p)
+            % Methode pour appeler l'optimisation MPC (position 3D)
+            % r : consigne de position sur l'horizon, matrice N x 3 [x y z]
+            %     ou vecteur plat [x1 y1 z1 x2 y2 z2 ...] (3N elements)
+            % a, v, p : mesures [ax ay az], [vx vy vz], [x y z] (3 elements chacun)
+            % u : consignes [z_ref phi_ref theta_ref psi_ref] (4x1)
+
+            if ~isvector(r) && size(r, 2) == 3
+                r = r.';          % N x 3 -> ordre ligne x1 y1 z1 x2 ...
+            end
+            py_r = py.list(num2cell(reshape(double(r), 1, [])));
+            py_a = py.list(num2cell(reshape(double(a), 1, [])));
+            py_v = py.list(num2cell(reshape(double(v), 1, [])));
+            py_p = py.list(num2cell(reshape(double(p), 1, [])));
+
+            py_u = obj.py_mpc.step(py_r, py_a, py_v, py_p);
+
+            u = reshape(double(py.list(py_u.tolist())), [], 1);
         end
 
         function y = internal_state(obj)
-            % Méthode pour lire l'état interne [az, vz, z] du MPC Python
-            % Sortie : y = [az; vz; z] (double MATLAB, vecteur colonne 3x1)
+            % Méthode pour lire l'état interne [ax ay az vx vy vz x y z] du MPC Python
+            % Sortie : y = 9x1 (double MATLAB, vecteur colonne)
             
             % Appeler la méthode internal_state() du script Python (renvoie un np.ndarray)
             py_y = obj.py_mpc.internal_state();
             
-            % Conversion : ndarray -> liste Python -> double MATLAB -> vecteur 3x1
+            % Conversion : ndarray -> liste Python -> double MATLAB -> vecteur 9x1
             y = double(py.list(py_y.tolist()));
-            y = reshape(y, [3, 1]);
+            y = reshape(y, [9, 1]);
         end
     end
 end

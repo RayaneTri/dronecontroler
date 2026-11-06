@@ -3,8 +3,8 @@ random_init ;
 % 1. Configurer l'environnement Python (.venv dans le dossier parent)
 script_dir = fileparts(mfilename('fullpath'));
 if ispc
-    venv_python = 'C:\Users\strig\dronecontroler\.venv\Scripts\python.exe';
-elseif ismac
+    venv_python = fullfile(script_dir, '..', '.venv', 'Scripts', 'python.exe');
+elseif ismac || isunix
     venv_python = fullfile(script_dir, '..', '.venv', 'bin', 'python');
 else
     error('main_simulation:UnsupportedOS', ...
@@ -14,12 +14,8 @@ pyenv('Version', venv_python);
 
 addpath(fileparts(mfilename('fullpath')));
 commande_system = Commande( ...
-    [0, 5, 10], ...
-    [0, 0.5, -0.2], ...
-    0.05, ...
-    [], ...
-    -9.81, ...
-    true);
+    [0 0 0; 0.5 0 0; 0 0 0], ...
+    [0, 5, 10]);
 
 % 2. Choix du contrôleur
 % true  : Modèle linéaire (LQR / LinearModel)
@@ -28,7 +24,7 @@ use_linear_model = false;
 
 horizon_N = 20;
 
-Q = 100;
+Q = 10;
 R = 1;
 V = 1;
 W = 20;
@@ -45,7 +41,6 @@ else
     mpc_system = MPC(model_path, Q, R, ekf, horizon_N, V, W);
     %linear_system = mpc_system;
 end
-
 % 3. Définir une consigne (référence) pour l'horizon N
 %r_reference = ones(1, horizon_N) * 1.5; 
 
