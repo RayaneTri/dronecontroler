@@ -147,7 +147,7 @@ class model_nn(L.LightningModule):
 class MPC:
     """
     MPC sur le modèle RNN : entrées u = consignes [z_ref, phi_ref, theta_ref, psi_ref] du contrôleur interne,
-    sorties du RNN = accélérations [ax, ay, az], intégrées en vitesses v et positions p = [x, y, z].
+    sorties du RNN = [ax, ay, z] : ax, ay sont intégrées en vitesses v = [vx, vy] et positions x, y ; z est lue directement.
     Coût : sum_k  Q ||p_k - r_k||^2 + R ||u_k - u_k_minus_1||^2
     """
     def __init__(self, model_path, Q, R, use_ekf, N=20, V=1, W=1):
@@ -156,7 +156,7 @@ class MPC:
         self.model.requires_grad_(False)
         self.use_ekf = use_ekf
         self.n_u = self.model.hparams.input_size                       # 4 consignes
-        self.n_a = self.model.hparams.output_size                      # 3 accélérations
+        self.n_a = self.model.hparams.output_size                      # 3 sorties [ax, ay, z]
 
         self.u_m = torch.tensor([1.499473, -0.000128, 0.000055, -0.000685])   # z_ref, phi_ref, theta_ref, psi_ref
         self.u_s = torch.tensor([0.576533, 0.173159, 0.173025, 0.288451])
@@ -176,11 +176,11 @@ class MPC:
         u_0 = (self.u_min + self.u_max) / 2                            # consigne de départ : z_ref = 1.5, angles nuls
         self.U = u_0.repeat(N, 1).requires_grad_(True)                 # (N, n_u)
 
-        # État interne : h_k (état caché du RNN, normalisé) ; a_k, v_k, p_k (x, y, z) en unités physiques
+        # État interne : h_k (état caché du RNN, normalisé) ; a_k (ax, ay), v_k (vx, vy), p_k (x, y, z) en unités physiques
         self.h_k = torch.zeros(1, 1, self.model.hparams.hidden_size)
-        self.a_k = np.zeros(self.n_a)
-        self.v_k = np.zeros(self.n_a)
-        self.p_k = np.zeros(self.n_a)
+        self.a_k = np.zeros(2)
+        self.v_k = np.zeros(2)
+        self.p_k = np.zeros(3)
 
         self.u_prev = u_0.clone()                                      # commande appliquée au pas précédent (n_u,)
         self.opt = torch.optim.Adam([self.U], lr=0.05)
@@ -200,9 +200,9 @@ class MPC:
         for k in range(self.N):
             h_k, a_k = self.step_torch(h_k, (U[k] - self.u_m) / self.u_s)
 
-            a_k = a_k * self.a_s + self.a_m
-            v_k = v_k + a_k * self.Te
-            p_k = p_k + v_k * self.Te
+            sr_k = a_k * self.a_s + self.a_m                              # [ax, ay, z]
+            v_k = v_k + sr_k[:2] * self.Te
+            p_k = torch.cat([p_k[:2] + v_k * self.Te, sr_k[2:]])
 
             U_prec = self.u_prev if k == 0 else U[k-1]
             cout_q = torch.sum((p_k - r[k]) ** 2)
@@ -210,27 +210,31 @@ class MPC:
         return cout
 
     def internal_state(self):
-        """État interne courant [ax, ay, az, vx, vy, vz, x, y, z] en unités physiques."""
-        return np.concatenate([self.a_k, self.v_k, self.p_k]).astype(np.float64)
+        """État interne courant [ax, ay, az, vx, vy, vz, x, y, z] en unités physiques
+        (az et vz ne sont plus dans le modèle : renvoyés à 0 pour garder le format 9x1)."""
+        return np.concatenate([self.a_k, [0.0], self.v_k, [0.0], self.p_k]).astype(np.float64)
 
     def step(self, r, a, v, p):
         """
         r : consigne de position sur l'horizon, (N, 3) [x, y, z] ou liste à plat x1 y1 z1 x2 y2 z2 ...
-        a, v, p : mesures (3,) [ax, ay, az], [vx, vy, vz], [x, y, z]
+        a, v, p : mesures (3,) [ax, ay, az], [vx, vy, vz], [x, y, z] (az et vz ignorés)
         Renvoie u (n_u,) : consignes [z_ref, phi_ref, theta_ref, psi_ref] à appliquer
         """
         # 1. État interne à l'instant k, à partir de l'état en k-1 et de la commande appliquée au pas précédent u_{k-1}
         if self.use_ekf:
-            # EKF : prédiction par le modèle + correction avec les mesures (a, v, p)
-            self.filter.ekf(np.concatenate([np.ravel(a), np.ravel(v), np.ravel(p)]), self.u_prev.numpy())
+            # EKF : prédiction par le modèle + correction avec y = (ax, ay, z, vx, vy, px, py, pz)
+            a, v, p = np.ravel(a), np.ravel(v), np.ravel(p)
+            y = np.concatenate([a[:2], p[2:3], v[:2], p])
+            self.filter.ekf(y, self.u_prev.numpy())
             self.h_k, self.a_k, self.v_k, self.p_k = self.filter.x0()
         else:
             # Boucle ouverte : prédiction par le modèle seul (mêmes équations que J), les mesures sont ignorées
             with torch.no_grad():
                 self.h_k, a_n = self.step_torch(self.h_k, (self.u_prev - self.u_m) / self.u_s)
-            self.a_k = (a_n * self.a_s + self.a_m).numpy().astype(np.float64)
+            sr = (a_n * self.a_s + self.a_m).numpy().astype(np.float64)   # [ax, ay, z]
+            self.a_k = sr[:2]
             self.v_k = self.v_k + self.a_k * self.Te
-            self.p_k = self.p_k + self.v_k * self.Te
+            self.p_k = np.concatenate([self.p_k[:2] + self.v_k * self.Te, sr[2:]])
 
         # 2. Optimisation de la séquence de commandes à partir de l'état estimé
         r = torch.as_tensor(np.asarray(r, dtype=np.float32)).reshape(-1, self.n_a)   # (N, 3)
