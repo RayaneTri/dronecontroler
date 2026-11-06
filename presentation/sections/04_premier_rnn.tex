@@ -7,23 +7,26 @@
     \framesubtitle{Sequence-to-sequence architecture}
     
     \begin{columns}[T]
-        \begin{block}{Parameters}
-            \begin{itemize}
-                \item One scalar input $u_t$ and one scalar output $\hat{y}_t$
-                \item Hidden state dimension: $16$
-                \item Early stopping to avoid overfitting
-            \end{itemize}
-        \end{block}
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Parameters}
+                \begin{itemize}
+                    \item One scalar input $u_t$ and one scalar output $\hat{y}_t$
+                    \item Hidden state dimension: $16$
+                    \item Early stopping to avoid overfitting
+                \end{itemize}
+            \end{block}
+        \end{column}
 
-        \begin{block}{State representation}
-            \begin{equation*}
-                h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
-            \end{equation*}
-            \begin{equation*}
-                \hat{y}_t = W_{hy}h_t + b_y
-            \end{equation*}
-        \end{block}
-
+        \begin{column}{0.48\textwidth}
+            \begin{block}{State representation}
+                \begin{equation*}
+                    h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
+                \end{equation*}
+                \begin{equation*}
+                    \hat{y}_t = W_{hy}h_t + b_y
+                \end{equation*}
+            \end{block}
+        \end{column}
     \end{columns}
 \end{frame}
 
@@ -34,18 +37,18 @@
 
         \begin{column}{0.30\textwidth}
             \begin{block}{Numerical results}
-                \begin{block}{Least-squares criterion}
-                    \begin{equation*}
-                        \hat{\boldsymbol{a}}
-                        = \underset{\boldsymbol{a}}{\arg\min}
-                        \sum_{i=1}^{N}
-                        \left(y_{\infty,i} - \hat{y}_\infty(u_i)\right)^2
-                    \end{equation*}
-                \end{block}
                 \begin{itemize}
                     \item Validation loss: $3.93\times 10^{-4}$
                     \item Test loss: $4.01\times 10^{-4}$
                 \end{itemize}
+            \end{block}
+
+            \begin{block}{Training criterion}
+                \begin{equation*}
+                    \mathcal{L}
+                    = \frac{1}{N}\sum_{i=1}^{N}
+                    \left(y_i - \hat{y}_i\right)^2
+                \end{equation*}
             \end{block}
         \end{column}
 
