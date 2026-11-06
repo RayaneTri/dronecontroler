@@ -5,3 +5,19 @@ prbs_data.mat
 Matlab files/dataset/*.mat
 slprj/
 *.autosave
+
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+*.bbl
+*.blg
+*.lof
+*.lot
