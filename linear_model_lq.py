@@ -91,7 +91,7 @@ ax.plot(
 ax.plot(
     t,
     y_pred[i],
-    label="Hammerstein model",
+    label="Linear model",
     color="#c62828",
     linewidth=3,
     linestyle="--",
@@ -100,11 +100,11 @@ ax.plot(
 ax.set_ylabel("Output $y$")
 ax.set_xlabel("Time (s)")
 ax.legend(frameon=True, framealpha=0.95, loc="upper right")
-fig.suptitle("Hammerstein Model Validation", fontsize=30, fontweight="bold")
+fig.suptitle("Linear Model Validation", fontsize=30, fontweight="bold")
 ax.grid(True, linestyle="--", linewidth=1.5, alpha=0.4)
 fig.tight_layout(rect=(0, 0, 1, 0.94))
 fig.savefig(
-    os.path.join(FIGURES_DIR, "hammerstein_model_validation.png"),
+    os.path.join(FIGURES_DIR, "linear_model_validation.png"),
     bbox_inches="tight",
 )
 

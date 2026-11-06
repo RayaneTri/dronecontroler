@@ -1,0 +1,89 @@
+% ==============================================================================
+% APPENDIX
+% ==============================================================================
+\appendix
+\section{Appendix}
+
+\begin{frame}{Appendix: System Modeling}
+    \framesubtitle{Linear Model: Least Square Method}
+    \begin{columns}[T]
+        \begin{column}{0.52\textwidth}
+
+            \begin{block}{Model equations}
+                \begin{align*}
+                    y_k(t+1)
+                        &= a\,y_k(t) + b\,u_k(t) + c \\
+                        &= \boldsymbol{\varphi}_k^{\mathsf T}
+                           \boldsymbol{\theta}.
+                \end{align*}
+                \[
+                    \boldsymbol{\varphi}_k^{\mathsf T} =
+                    \begin{bmatrix} y_k(t) & u_k(t) & 1 \end{bmatrix}
+                    \qquad
+                    \boldsymbol{\theta} =
+                    \begin{bmatrix} a & b & c \end{bmatrix}^{\mathsf T}.
+                \]
+
+                The least-squares estimate is
+                \begin{equation*}
+                    \boldsymbol{\theta}^{\star}
+                        =
+                        \left(\boldsymbol{\Phi}^{\mathsf T}
+                        \boldsymbol{\Phi}\right)^{-1}
+                        \boldsymbol{\Phi}^{\mathsf T}\boldsymbol{Y}.
+                \end{equation*}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \centering
+
+            \vspace{0.15cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=2.75cm,
+                keepaspectratio
+            ]{least_squares_model_validation.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Appendix: System Modeling}
+    \framesubtitle{Linear Model with Constant Steady-State Gain}
+    \begin{columns}[T]
+        \begin{column}{0.54\textwidth}
+            \small
+            \begin{block}{State Function}
+                First-order lag driven by a constant gain $K$ and offset $c$:
+                $\dot{v}(t) = \frac{1}{\tau}\bigl(K u(t) - v(t)\bigr)$,
+                i.e.\ $\tau\,\dot{v} + v = K u + c$.
+            \end{block}
+            \begin{block}{Parameter Identification}
+                - \textbf{Static gain $K$}: affine least-squares fit on steady-state regimes:
+                \begin{equation*}
+                    v(t) = K\,u(t) + c, \qquad K \approx 22.5,\ c \approx -9.8
+                \end{equation*}
+                - \textbf{Tau identification}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.46\textwidth}
+
+                \centering
+                \includegraphics[
+                    width=\linewidth,
+                    height=2.3cm,
+                    keepaspectratio
+                ]{regression_gain_constant.png}
+
+
+                \centering
+                \includegraphics[
+                    width=\linewidth,
+                    height=6.2cm,
+                    keepaspectratio
+                ]{linear_gain_model_validation.png}
+        \end{column}
+    \end{columns}
+\end{frame}
