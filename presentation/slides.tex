@@ -12,7 +12,7 @@
 \graphicspath{{figures/}{presentation/figures/}{.}{presentation/}}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, backgrounds}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, backgrounds, calc}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{microtype}
@@ -120,6 +120,37 @@
 \input{sections/09_requested_command}
 \input{sections/10_comparison}
 \input{sections/11_data_generation}
+\input{sections/11b_rnn_mpc_ekf_3d}
+
+% ------------------------------------------------------------------------------
+% Closing Slide (same background as the title slide)
+% ------------------------------------------------------------------------------
+{
+\setbeamertemplate{background}{%
+    \begin{tikzpicture}[remember picture, overlay]
+        \clip (current page.south west) rectangle (current page.north east);
+        \node[at=(current page.center), opacity=0.20, inner sep=0pt] {
+            \includegraphics[width=\paperwidth]{screen_simulink.png}
+        };
+    \end{tikzpicture}%
+}
+\begin{frame}[plain,noframenumbering]
+    \centering
+    \vfill
+    {\usebeamerfont{title}\color{CSNavy}\LARGE\bfseries Thank you for your attention}
+
+    \vspace{0.8cm}
+    {\Large\color{CSSlate} Questions?}
+
+    \vspace{1.2cm}
+    {\small \insertauthor}
+
+    \vspace{0.3cm}
+    {\footnotesize\color{gray} \insertinstitute{} -- \insertdate}
+    \vfill
+\end{frame}
+}
+
 \input{sections/12_annexe}
 
 \end{document}

@@ -1,13 +1,13 @@
 % ==============================================================================
 % SECTION 4: FIRST RECURRENT NEURAL NETWORK
 % ==============================================================================
-\section{First RNN}
+\subsection{First RNN}
 
 \begin{frame}{First RNN}
     \framesubtitle{Sequence-to-sequence architecture}
     
-    \begin{columns}[T]
-        \begin{column}{0.40\textwidth}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.50\textwidth}
             \begin{block}{Parameters}
                 \begin{itemize}
                     \item One scalar input $u_t$ and one scalar output $\hat{y}_t$
@@ -17,6 +17,7 @@
             \end{block}
 
             \begin{block}{State representation}
+                \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
                 \begin{equation*}
                     h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
                 \end{equation*}
@@ -26,61 +27,39 @@
             \end{block}
         \end{column}
 
-        \begin{column}{0.58\textwidth}
+        \begin{column}{0.46\textwidth}
             \centering
-            % Network unrolled in time: 1 -> 16 -> 1 (rnn_mpc.ipynb, export_NN/)
-            \resizebox{\linewidth}{!}{%
-                \begin{tikzpicture}[
-                    >=Stealth,
-                    blk/.style={
-                        rounded corners=2pt,
-                        thick,
-                        minimum width=2.05cm,
-                        minimum height=0.75cm,
-                        align=center,
-                        font=\scriptsize
-                    },
-                    blkgray/.style={blk, draw=gray, fill=gray!10},
-                    blkcell/.style={blk, draw=CSSlate, fill=CSSlate!10, minimum height=1.05cm},
-                    blkhead/.style={blk, draw=DarkGreen, fill=DarkGreen!10},
-                    sig/.style={font=\scriptsize, inner sep=1pt},
-                    fl/.style={->, thick, draw=black!65},
-                    rec/.style={->, very thick, draw=CSSlate}
-                ]
-                    \foreach \k/\lab [count=\i from 0] in {a/{t-1}, b/{t}, c/{t+1}} {
-                        \begin{scope}[xshift=\i*2.8cm]
-                            \node[sig] (u\k) at (0,0) {$u_{\lab}\in\mathbb{R}$};
-                            \node[blkgray] (n\k) at (0,0.825)
-                                {normalization\\[-1pt]$\tilde{u}=(u-\mu_u)/\sigma_u$};
-                            \node[blkcell] (c\k) at (0,2.025)
-                                {\textbf{RNN cell}\\16 units, $\tanh$\\$h_{\lab}$};
-                            \node[blkhead] (l\k) at (0,3.225)
-                                {linear layer\\[-1pt]$16 \to 1$};
-                            \node[blkgray] (d\k) at (0,4.275)
-                                {denormalization\\[-1pt]$\sigma_y\,\hat{y}+\mu_y$};
-                            \node[sig] (y\k) at (0,5.1) {$y_{\lab}\in\mathbb{R}$};
-                            \draw[fl] (u\k) -- (n\k);
-                            \draw[fl] (n\k) -- node[right, font=\scriptsize] {$W_{ih}$} (c\k);
-                            \draw[fl] (c\k) -- node[right, font=\scriptsize] {$h_{\lab}$} (l\k);
-                            \draw[fl] (l\k) -- node[right, font=\scriptsize] {$\hat{y}_{\lab}$} (d\k);
-                            \draw[fl] (d\k) -- (y\k);
-                        \end{scope}
-                    }
-                    % Recurrence through time
-                    \draw[rec, dashed] ([xshift=-0.45cm]ca.west) --
-                        node[above, font=\scriptsize] {$h_{t-2}$} (ca.west);
-                    \draw[rec] (ca.east) --
-                        node[above, font=\scriptsize] {$h_{t-1}$}
-                        node[below, font=\scriptsize] {$W_{hh}$} (cb.west);
-                    \draw[rec] (cb.east) --
-                        node[above, font=\scriptsize] {$h_{t}$}
-                        node[below, font=\scriptsize] {$W_{hh}$} (cc.west);
-                    \draw[rec, dashed] (cc.east) --
-                        node[above, font=\scriptsize] {$h_{t+1}$} ([xshift=0.45cm]cc.east);
-                    % Signals
-                    \node[font=\scriptsize, text=black!65, anchor=north] at ([yshift=-0.08cm]ub.south)
-                        {$u$: PRBS input \quad $y=a_z$: vertical acceleration \quad step $T_e=0.05$~s};
-                \end{tikzpicture}%
+            \resizebox{!}{0.68\textheight}{%
+            \begin{tikzpicture}[
+                >=Stealth,
+                neuron/.style={circle, draw, thick, minimum size=0.42cm, inner sep=0pt},
+                hid/.style={neuron, fill=blue!12, draw=blue!60!black, minimum size=0.19cm}
+            ]
+                \def\dy{0.22}
+                % input and output
+                \node[neuron, fill=green!15, draw=green!50!black] (in) at (0,0) {\scriptsize $u_t$};
+                \node[neuron, fill=orange!20, draw=orange!70!black] (out) at (4.4,0) {\scriptsize $\hat{y}_t$};
+                % 16 hidden neurons
+                \foreach \i in {1,...,16} {
+                    \node[hid] (h\i) at (2.2,{(8.5-\i)*\dy}) {};
+                    \draw[gray!60, line width=0.3pt] (in) -- (h\i);
+                    \draw[gray!60, line width=0.3pt] (h\i) -- (out);
+                }
+                % hidden layer frame
+                \node[draw=blue!60!black, dashed, rounded corners=3pt, inner sep=3pt,
+                      fit=(h1)(h16)] (layer) {};
+                % recurrence loop
+                \draw[->, thick, blue!60!black]
+                    (layer.north east) .. controls +(0.6,0.8) and +(-0.6,0.8) ..
+                    node[above, font=\scriptsize] {$W_{hh}\,h_{t-1}$} (layer.north west);
+                % labels
+                \node[below=0.15cm of layer, font=\scriptsize, align=center]
+                    {hidden state $h_t$\\(16 neurons, $\tanh$)};
+                \node[below=0.25cm of in, font=\scriptsize] {input};
+                \node[below=0.25cm of out, font=\scriptsize] {output};
+                \node[font=\scriptsize] at (1.0,0.75) {$W_{ih}$};
+                \node[font=\scriptsize] at (3.4,0.75) {$W_{hy}$};
+            \end{tikzpicture}%
             }
         \end{column}
     \end{columns}

@@ -3,7 +3,7 @@
 % ==============================================================================
 
 \begin{frame}{MPC control}
-    \framesubtitle{Model predictive control design}
+    \framesubtitle{Model predictive control: results}
 
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
@@ -13,61 +13,94 @@
                     auto,
                     >=Stealth,
                     thick,
-                    node distance=0.75cm and 0.9cm,
+                    node distance=1.2cm,
                     block/.style={
                         draw,
                         rectangle,
-                        minimum height=0.65cm,
-                        minimum width=1.25cm,
                         align=center,
+                        minimum height=0.8cm,
+                        minimum width=1.55cm,
+                        inner sep=2pt,
                         fill=blue!5,
                         rounded corners=2pt,
                         font=\scriptsize
-                    },
-                    mpc/.style={
-                        draw,
-                        minimum width=1.9cm,
-                        minimum height=1.2cm,
-                        fill=blue!5,
-                        rounded corners=2pt,
-                        label=above:{\scriptsize \textbf{MPC}}
-                    },
-                    rnn/.style={
-                        block,
-                        minimum width=0.9cm,
-                        minimum height=0.45cm
                     }
                 ]
                     \node (reference) {};
-                    \node[mpc, right=0.75cm of reference] (controller) {};
-                    \node[rnn] (rnnnode) at ([yshift=-0.25cm]controller.center) {RNN};
-                    \node[block, right=0.9cm of controller] (system)
-                        {\textbf{System}\\[-1pt]\tiny (Drone)};
-                    \node[right=of system] (output) {};
+                    \node[block, right=of reference] (mpc) {\textbf{MPC}\\[-1pt]\tiny RNN model};
+                    \node[block, right=of mpc] (system) {\textbf{System}\\[-1pt]\tiny (Drone)};
+                    \node[right=0.55cm of system] (output) {};
 
-                    \draw[->] (reference) -- node {$r$} (controller.west);
-                    \draw[->] (controller.east) -- node {$u$} (system.west);
-                    \draw[->] (system.east) -- node {$a_z$} (output);
+                    \draw[->] (reference) -- node {$r$} (mpc);
+                    \draw[->] (mpc) -- node {$u$} (system);
+                    \draw[->] (system) -- node {$a_z$} (output);
                 \end{tikzpicture}
             \end{block}
 
             \begin{exampleblock}{Performance}
-                \begin{itemize}
-                    \item Good overall tracking.
-                    \item No phase shifting good prediction. 
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Good overall tracking of the reference.
+                    \item No phase lag: good RNN prediction.
                     \item Full amplitude not reached.
-                    \item Only internal state.
+                    \item Open loop: no measurement feedback.
                 \end{itemize}
             \end{exampleblock}
         \end{column}
 
         \begin{column}{0.48\textwidth}
             \centering
-            \includegraphics[
-                width=\linewidth,
-                height=5.5cm,
-                keepaspectratio
-            ]{mpc_rnn_sinewave.jpeg}
+            \begin{figure}
+                \includegraphics[
+                    width=\linewidth,
+                    height=5.5cm,
+                    keepaspectratio
+                ]{mpc_rnn_sinewave.png}
+                \caption{\scriptsize MPC-RNN response for a sinusoidal reference.}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{MPC control}
+    \framesubtitle{Model predictive control design}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Cost function minimized}
+                \footnotesize
+                \setlength{\abovedisplayskip}{0pt}\setlength{\belowdisplayskip}{2pt}
+                \[
+                    J(U) = \sum_{i=1}^{N} q\,\big(\hat{a}_{z,k+i} - r_{k+i}\big)^2
+                    + \rho\, u_{k+i-1}^2
+                \]
+                {\scriptsize\raggedright
+                $U=(u_k,\dots,u_{k+N-1})$, \ $-1\le u_{k+i}\le 1$, \ $N=20$\\
+                $\hat{a}_z$: acceleration predicted by the RNN from its internal state\\
+                Only $u_k$ is applied, then the horizon slides\par}
+                \vspace{3pt}
+                {\scriptsize\raggedright
+                $J$ is minimized by gradient descent with Adam steps
+                (gradients through the RNN by autodiff)\par}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{From $a_z$ to $z$}
+                \scriptsize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item First tried: control based on $a_z$.
+                    \item $a_z$ followed the reference, but $z$ diverged
+                    from the request: small errors on $a_z$ accumulate
+                    when integrated twice.
+                    \item So the cost was moved to the height:
+                \end{itemize}
+                \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{0pt}
+                \[
+                    J(U) = \sum_{i=1}^{N} q\,\big(\hat{z}_{k+i} - r_{k+i}\big)^2
+                    + \rho\,\big(u_{k+i-1} - u_{k+i-2}\big)^2
+                \]
+            \end{alertblock}
         \end{column}
     \end{columns}
 \end{frame}

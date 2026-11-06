@@ -4,27 +4,92 @@
 \section{Advanced Control Law}
 
 \begin{frame}{Data generation}
-    \framesubtitle{PRBS excitation in the 3D drone workspace}
+    \framesubtitle{First attempt: PRBS directly on the motor commands}
 
     \begin{columns}[T,onlytextwidth]
-
-        \begin{column}{0.48\textwidth}
+        \begin{column}{0.40\textwidth}
             \begin{block}{Objective}
-                Generate sufficiently rich input/output trajectories to
-                identify a nonlinear dynamic model of the drone.
-                \begin{itemize}
-                    \item Excite the four actuator commands around hover
-                    \item Capture the coupled 3D dynamics (12 variables)
-                    \item Store synchronized inputs and measured outputs
-                \end{itemize}
-            \end{block}
-
-            \begin{block}{Simulation setup}
-                \begin{itemize}
+                \footnotesize
+                Generate rich input/output trajectories to identify a
+                nonlinear dynamic model of the drone in 3D (4 inputs and 12 outputs).
+                \begin{itemize}\setlength{\itemsep}{0pt}
                     \item Sampling time: $T_s = 0.05\,\mathrm{s}$
                     \item $N = 2000$ samples per trajectory
                     \item $3000$ independent experiments
-                    \item Initial hover command: $U_{\mathrm{hover}} = 0.55$
+                    \item Hover command: $U_{\mathrm{hover}} = 0.55$
+                    \item Four independent piecewise-constant modes
+                    $\delta=[\delta_T,\delta_r,\delta_p,\delta_y]$,
+                    held for $1$ to $3$\,s around hover
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.57\textwidth}
+            \centering
+            \includegraphics[
+                width=\linewidth,
+                height=0.46\textheight,
+                keepaspectratio
+            ]{PRBS_sans_flight_controller.jpeg}
+
+            \begin{alertblock}{Why it was not enough}
+                \footnotesize
+                Without feedback the drone is unstable: it does not stay
+                near hover, so most trajectories leave the useful flight
+                domain. The data is unusable for identification.
+                \\[2pt]
+                $\Rightarrow$ put a flight controller in the loop.
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Data generation}
+    \framesubtitle{With a flight controller in the loop}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{APRBS on the references}
+                \footnotesize
+                We no longer excite $U_1,\dots,U_4$ directly. The four
+                references of the flight controller are excited instead:
+                \[
+                    r = [z_{\mathrm{ref}},\ \phi_{\mathrm{ref}},\
+                    \theta_{\mathrm{ref}},\ \psi_{\mathrm{ref}}]
+                \]
+                Each level is drawn uniformly and held for a random
+                duration between $1$ and $3$ seconds.
+            \end{block}
+
+            \begin{block}{Dataset}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item $3000$ simulations of $100$\,s, sampled at $20$\,Hz
+                    \item First $3$\,s dropped (motor start-up)
+                    \item Runs with an angle above $1$\,rad rejected
+                    (drone lost)
+                    \item New sensor-noise seeds for every run
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{From version 1 to version 2}
+                \footnotesize
+                Version 1 used PID controllers directly on the attitude
+                angles: stable, but not fast enough (see the appendix).
+                Version 2 is a cascade controller: an outer angle loop and a
+                fast inner angular-rate loop.
+            \end{block}
+
+            \begin{block}{Controller parameters}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Outer angle gain: $K_a=2.5$
+                    \item Inner rate PID:
+                    $P=0.125,\ I=0.05,\ D=0.025,\ N=100$
+                    \item Sampling time: $T_s=0.005\,\mathrm{s}$
+                    \item Same structure for roll and pitch
                 \end{itemize}
             \end{block}
         \end{column}
@@ -32,41 +97,10 @@
 \end{frame}
 
 \begin{frame}{Data generation}
-    \framesubtitle{Flight controller}
-
-    \begin{block}{APRBS excitation}
-        We don't directly generate u inputs (unusable data).
-        Instead, we use a flight controller : the inputs are now four independently generated piecewise-constant modes:
-        \[
-            \delta = [\delta_T,\delta_r,\delta_p,\delta_y]
-        \]
-        Each level is sampled uniformly and held for a random duration
-        between $1$ and $3$ seconds.
-    \end{block}
-
-    \begin{block}{From version 1 to version 2}
-        Version 1 used PID controllers directly on the attitude angles:
-        it was stable, but not fast enough (see the appendix).
-        Version 2 uses a cascade controller with an outer angle loop and a
-        fast inner angular-rate loop.
-    \end{block}
-
-    \begin{block}{Controller parameters}
-        \begin{itemize}
-            \item Outer angle gain: $K_a=2.5$
-            \item Inner rate PID:
-            $P=0.125,\ I=0.05,\ D=0.025,\ N=100$
-            \item Sampling time: $T_s=0.005\,\mathrm{s}$
-            \item Same structure for roll and pitch
-        \end{itemize}
-    \end{block}
-\end{frame}
-
-\begin{frame}{Data generation}
     \framesubtitle{Flight controller --- version 2}
     \centering
     \includegraphics[
-        width=\paperwidth,
+        width=\textwidth,
         height=0.86\textheight,
         keepaspectratio
     ]{cascade_roll_block.png}
