@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1793958600.50188 "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" "slides.pdf" "slides" 1793958605.5573 0
+["pdflatex"] 1793958918.45605 "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" "slides.pdf" "slides" 1793958923.70496 0
   "/Users/Christian/Desktop/EI DDC/dronecontroler/presentation/slides.tex" 1793958543.3718 4491 168722ab6c438a479a999feba633e135 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -284,13 +284,13 @@
   "sections/07_mpc_control.tex" 1793958001.14122 2802 320bdc5320a6118626e577863b0bc176 ""
   "sections/08_mpc_with_ekf.tex" 1793958399.52396 3130 98b57559af5b910562bf4d243444966c ""
   "sections/09_requested_command.tex" 1793958361.80326 1305 2b4a0c1983297644c4564bb88ee34803 ""
-  "sections/10_comparison.tex" 1793958001.14148 1384 9ac98eb36cf75764ed911706a0427827 ""
+  "sections/10_comparison.tex" 1793958915.44115 1257 7207d96d4f9a06d3e59aff2c163444f0 ""
   "sections/11_data_generation.tex" 1793958586.12522 3375 206797f988c1cfe90b1dfd8ca78432a0 ""
-  "slides.aux" 1793958605.46643 4355 d56a91ede758dedb54f40f308784fefa "pdflatex"
-  "slides.nav" 1793958605.46753 2633 84a4682a628c5a6bffedbadbab808c39 "pdflatex"
-  "slides.out" 1793958605.46735 716 c19b7f00fe07a0ef171d75068ba2b3cc "pdflatex"
+  "slides.aux" 1793958923.61159 4355 d56a91ede758dedb54f40f308784fefa "pdflatex"
+  "slides.nav" 1793958923.61278 2633 84a4682a628c5a6bffedbadbab808c39 "pdflatex"
+  "slides.out" 1793958923.61259 716 c19b7f00fe07a0ef171d75068ba2b3cc "pdflatex"
   "slides.tex" 1793958543.3718 4491 168722ab6c438a479a999feba633e135 ""
-  "slides.toc" 1793958605.46756 335 fa18873a1333f944e90f01e6165cfa15 "pdflatex"
+  "slides.toc" 1793958923.61281 335 fa18873a1333f944e90f01e6165cfa15 "pdflatex"
   (generated)
   "slides.aux"
   "slides.log"
