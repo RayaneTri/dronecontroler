@@ -3,7 +3,7 @@ random_init ;
 % 1. Configurer l'environnement Python (.venv dans le dossier parent)
 script_dir = fileparts(mfilename('fullpath'));
 if ispc
-    venv_python = 'C:\Users\strig\dronecontroler\.venv\Scripts\python.exe';
+    venv_python = fullfile(script_dir, '..', '.venv', 'Scripts', 'python.exe');
 elseif ismac || isunix
     venv_python = fullfile(script_dir, '..', '.venv', 'bin', 'python');
 else
@@ -14,7 +14,7 @@ pyenv('Version', venv_python);
 
 addpath(fileparts(mfilename('fullpath')));
 commande_system = Commande( ...
-    [0 0 0; 0 0 0.5; 0 0 -0.2], ...
+    [0 0 0; 0.5 0 0; 0 0 0], ...
     [0, 5, 10]);
 
 % 2. Choix du contrôleur
@@ -22,7 +22,7 @@ commande_system = Commande( ...
 % false : MPC non-linéaire (RNN PyTorch)
 use_linear_model = false; 
 
-horizon_N = 20;
+horizon_N = 15;
 
 Q = 100;
 R = 1;

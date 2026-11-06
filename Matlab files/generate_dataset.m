@@ -2,7 +2,7 @@
 % Génère Nseed simulations avec des consignes APRBS différentes et exporte
 % dans un seul fichier dataset_all.mat (v7) :
 %   REF (N, T, 4)  : consignes z_ref, phi_ref, theta_ref, psi_ref
-%   Y   (N, T, k)  : colonnes de sortie choisies dans keep_names (ax, ay, az par défaut)
+%   Y   (N, T, k)  : colonnes de sortie choisies dans keep_names (ax, ay, az, z)
 %
 % Les simulations sont lancées PAR LOTS : la mémoire reste faible, les
 % résultats sont sauvegardés après chaque lot, et un lancement interrompu
@@ -15,6 +15,7 @@
 %   - To Workspace `simout`  sur all_outputs
 %   - Save format = Timeseries, Sample time = 0.05 pour ces deux blocs
 %   - Model Settings > Data Import/Export : "Single simulation output" coché
+%   - pas de solveur fixe 0.005, scopes et blocs MPC commentés (plus rapide)
 
 % Pas de "clear" général : le modèle a besoin de variables du workspace de base
 % (Ts, g_noise, seed_...) définies par random_init.
@@ -23,19 +24,18 @@ clear in out REF Y SEED REF_all Y_all valid done rec run t ref y seeds
 %% Paramètres
 init_script = 'random_init';  % script qui définit Ts, g_noise et les seed_...
 mdl    = 'system_simulation_FC';
-Nseed  = 3000;        % nombre de simulations
-seed0  = 1000;        % seeds utilisées : seed0+1 ... seed0+Nseed (reproductible)
+Nseed      = 3000;
+seed0      = 1000;
+batch_size = 500;        % seeds utilisées : seed0+1 ... seed0+Nseed (reproductible)
 T_sim  = 100;         % durée d'une simulation [s] (< 128 s : pas de répétition de l'APRBS)
 T_warm = 3;           % début jeté (démarrage moteurs), = T_warm du bloc aprbs_ref
 dt     = 0.05;        % pas d'échantillonnage du dataset [s] (20 Hz, comme le MPCC)
 outdir = 'dataset';
-batch_size = 200;     % nombre de simulations par lot
-
 % Noms des colonnes (ordre de all_outputs dans UAV_model)
 ref_names = {'z_ref','phi_ref','theta_ref','psi_ref'};
 y_names   = {'x','y','z','vx','vy','vz','ax','ay','az', ...
              'phi','theta','psi','wx','wy','wz','w_dot_x','w_dot_y','w_dot_z'};
-keep_names = {'ax','ay','az'};    % colonnes de y exportées
+keep_names = {'ax','ay','z'};   % colonnes de y exportées dans Y
 
 % Variables de graine du bruit capteur (fixées à partir de la seed du run)
 noise_vars = {'seed_x','seed_y','seed_z','seed_vx','seed_vy','seed_vz', ...
@@ -48,6 +48,7 @@ angle_max = 1.0;      % [rad] au-delà, le run est rejeté (drone perdu)
 sim_mode     = 'accelerator';  % 'accelerator' (compilé, plus rapide) ou 'normal'
 fast_restart = true;           % compile le modèle une seule fois par lot
 use_parallel = true;           % parsim sur tous les cœurs si la Parallel Computing Toolbox est là
+n_workers    = 4;              % nb de workers parallèles (chacun prend ~1 à 2 Go de RAM)
 
 %% Préparation
 warning('off', 'Simulink:Engine:InputNotConnected');
@@ -67,7 +68,18 @@ if any(i_keep == 0), error('keep_names contient un nom absent de y_names.'); end
 
 has_pct = use_parallel && license('test', 'Distrib_Computing_Toolbox') && ~isempty(ver('parallel'));
 fr = 'off'; if fast_restart, fr = 'on'; end
+if has_pct
+    pool = gcp('nocreate');
+    if isempty(pool) || pool.NumWorkers ~= n_workers
+        delete(pool);  parpool(n_workers);
+    end
+end
 fast_ok = true;   % passe à false si le mode rapide est refusé une fois
+
+% Préparation de chaque worker parallèle : mêmes dossiers dans le path que toi
+% (fonctions et classes appelées par les blocs MATLAB Function), puis random_init.
+proj_dir  = pwd;
+setup_fcn = @() evalin('base', sprintf('addpath(genpath(''%s'')); %s', proj_dir, init_script));
 
 %% Reprise d'un lancement interrompu
 partial_file = fullfile(outdir, 'dataset_partial.mat');
@@ -115,7 +127,7 @@ for b0 = 1:batch_size:numel(todo)
         if ~fast_ok, error('mode normal'); end
         if has_pct
             out = parsim(in, 'ShowProgress', 'off', 'UseFastRestart', fr, ...
-                         'SetupFcn', @() evalin('base', init_script));
+                         'SetupFcn', setup_fcn);
         else
             out = sim(in, 'ShowProgress', 'off', 'UseFastRestart', fr);
         end
@@ -128,7 +140,7 @@ for b0 = 1:batch_size:numel(todo)
             in(k) = in(k).setModelParameter('SimulationMode', 'normal');
         end
         if has_pct
-            out = parsim(in, 'ShowProgress', 'off', 'SetupFcn', @() evalin('base', init_script));
+            out = parsim(in, 'ShowProgress', 'off', 'SetupFcn', setup_fcn);
         else
             out = sim(in, 'ShowProgress', 'off');
         end
@@ -137,11 +149,12 @@ for b0 = 1:batch_size:numel(todo)
     % Extraction immédiate (on ne garde que ce qui sert)
     for k = 1:numel(idx)
         n = idx(k);
-        done(n) = true;
         if ~isempty(out(k).ErrorMessage)
+            % run NON marqué comme fait : il sera retenté au prochain lancement
             warning('Run %d en erreur : %s', n, out(k).ErrorMessage);
             continue
         end
+        done(n) = true;
         ref = getsig(out(k), 'ref_log', t, 'previous');
         y   = getsig(out(k), 'simout',  t, 'linear');
         if size(y, 2) ~= numel(y_names)
