@@ -6,8 +6,8 @@
 \begin{frame}{First RNN}
     \framesubtitle{Sequence-to-sequence architecture}
     
-    \begin{columns}[T]
-        \begin{column}{0.48\textwidth}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.50\textwidth}
             \begin{block}{Parameters}
                 \begin{itemize}
                     \item One scalar input $u_t$ and one scalar output $\hat{y}_t$
@@ -15,10 +15,9 @@
                     \item Early stopping to avoid overfitting
                 \end{itemize}
             \end{block}
-        \end{column}
 
-        \begin{column}{0.48\textwidth}
             \begin{block}{State representation}
+                \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
                 \begin{equation*}
                     h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
                 \end{equation*}
@@ -26,6 +25,42 @@
                     \hat{y}_t = W_{hy}h_t + b_y
                 \end{equation*}
             \end{block}
+        \end{column}
+
+        \begin{column}{0.46\textwidth}
+            \centering
+            \resizebox{!}{0.68\textheight}{%
+            \begin{tikzpicture}[
+                >=Stealth,
+                neuron/.style={circle, draw, thick, minimum size=0.42cm, inner sep=0pt},
+                hid/.style={neuron, fill=blue!12, draw=blue!60!black, minimum size=0.19cm}
+            ]
+                \def\dy{0.22}
+                % input and output
+                \node[neuron, fill=green!15, draw=green!50!black] (in) at (0,0) {\scriptsize $u_t$};
+                \node[neuron, fill=orange!20, draw=orange!70!black] (out) at (4.4,0) {\scriptsize $\hat{y}_t$};
+                % 16 hidden neurons
+                \foreach \i in {1,...,16} {
+                    \node[hid] (h\i) at (2.2,{(8.5-\i)*\dy}) {};
+                    \draw[gray!60, line width=0.3pt] (in) -- (h\i);
+                    \draw[gray!60, line width=0.3pt] (h\i) -- (out);
+                }
+                % hidden layer frame
+                \node[draw=blue!60!black, dashed, rounded corners=3pt, inner sep=3pt,
+                      fit=(h1)(h16)] (layer) {};
+                % recurrence loop
+                \draw[->, thick, blue!60!black]
+                    (layer.north east) .. controls +(0.6,0.8) and +(-0.6,0.8) ..
+                    node[above, font=\scriptsize] {$W_{hh}\,h_{t-1}$} (layer.north west);
+                % labels
+                \node[below=0.15cm of layer, font=\scriptsize, align=center]
+                    {hidden state $h_t$\\(16 neurons, $\tanh$)};
+                \node[below=0.25cm of in, font=\scriptsize] {input};
+                \node[below=0.25cm of out, font=\scriptsize] {output};
+                \node[font=\scriptsize] at (1.0,0.75) {$W_{ih}$};
+                \node[font=\scriptsize] at (3.4,0.75) {$W_{hy}$};
+            \end{tikzpicture}%
+            }
         \end{column}
     \end{columns}
 \end{frame}

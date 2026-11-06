@@ -33,42 +33,9 @@
         \end{column}
 
         \begin{column}{0.48\textwidth}
-            \begin{block}{Predict}
-                \footnotesize
-                \vspace{-6pt}
-                \begin{align*}
-                    \hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1},u_{k-1})\\
-                    P_{k|k-1} &= F_k P_{k-1|k-1} F_k^\top + Q,\quad F_k=\tfrac{\partial f}{\partial x}
-                \end{align*}
-            \end{block}
-
-            \begin{block}{Update}
-                \footnotesize
-                \vspace{-6pt}
-                \begin{align*}
-                    K_k &= P_{k|k-1} H^\top (H P_{k|k-1} H^\top + R)^{-1}\\
-                    \hat{x}_{k|k} &= \hat{x}_{k|k-1} + K_k\,(y_k - H\hat{x}_{k|k-1} - c)\\
-                    P_{k|k} &= (I-K_kH)\,P_{k|k-1}
-                \end{align*}
-            \end{block}
-
-            \begin{exampleblock}{Role in the MPC}
-                \footnotesize
-                $\hat{x}_{k|k}$ is the initial state of each MPC prediction.
-            \end{exampleblock}
-        \end{column}
-    \end{columns}
-\end{frame}
-
-
-\begin{frame}{MPC with EKF}
-    \framesubtitle{State estimation and predictive control}
-
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.56\textwidth}
             \begin{block}{Control principle}
                 \centering
-                \resizebox{0.88\linewidth}{!}{%
+                \resizebox{\linewidth}{!}{%
                 \begin{tikzpicture}[
                     auto,
                     >=Stealth,
@@ -116,34 +83,6 @@
                 $y_k=(a_z, v_z, z)$: measurements\\
                 $\hat{x}_{k|k}=(\hat{h}, \hat{v}_z, \hat{z})$: estimated state,
                 initial state of the RNN prediction at each step\par}
-            \end{block}
-
-            % \begin{exampleblock}{Performance}
-            %     \begin{itemize}
-            %         \item EKF-based state estimation improves feedback.
-            %         \item The closed-loop response follows the sinusoidal
-            %         reference more closely.
-            %         \item The initial transient is reduced compared with the
-            %         open-loop response.
-            %     \end{itemize}
-            % \end{exampleblock}
-        \end{column}
-
-        \begin{column}{0.41\textwidth}
-            \begin{block}{One control step}
-                \footnotesize
-                \begin{enumerate}\setlength{\itemsep}{2pt}
-                    \item EKF: correct the state with the new
-                    measurement $y_k$ and $u_{k-1}$
-                    $\Rightarrow \hat{x}_{k|k}$
-                    \item MPC: 50 Adam steps on $J(U)$, the RNN prediction
-                    starting from $\hat{x}_{k|k}$
-                    \item Apply $u_k$, shift $U$ by one step
-                    (warm start for $k+1$)
-                \end{enumerate}
-                \vspace{2pt}
-                {\scriptsize Sampling time $T_e = 0.05$\,s,
-                horizon $N=20$ (1\,s).\par}
             \end{block}
         \end{column}
     \end{columns}

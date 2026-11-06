@@ -3,10 +3,63 @@
 % ==============================================================================
 
 \begin{frame}{MPC control}
+    \framesubtitle{Model predictive control: results}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Control principle}
+                \centering
+                \begin{tikzpicture}[
+                    auto,
+                    >=Stealth,
+                    thick,
+                    node distance=1.2cm,
+                    block/.style={
+                        draw,
+                        rectangle,
+                        align=center,
+                        minimum height=0.8cm,
+                        minimum width=1.55cm,
+                        inner sep=2pt,
+                        fill=blue!5,
+                        rounded corners=2pt,
+                        font=\scriptsize
+                    }
+                ]
+                    \node (reference) {};
+                    \node[block, right=of reference] (mpc) {\textbf{MPC}\\[-1pt]\tiny RNN model};
+                    \node[block, right=of mpc] (system) {\textbf{System}\\[-1pt]\tiny (Drone)};
+                    \node[right=0.55cm of system] (output) {};
+
+                    \draw[->] (reference) -- node {$r$} (mpc);
+                    \draw[->] (mpc) -- node {$u$} (system);
+                    \draw[->] (system) -- node {$a_z$} (output);
+                \end{tikzpicture}
+            \end{block}
+
+            \begin{exampleblock}{Performance}
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Good overall tracking of the reference.
+                    \item No phase lag: good RNN prediction.
+                    \item Full amplitude not reached.
+                    \item Open loop: no measurement feedback.
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=\linewidth,height=5.5cm,keepaspectratio]{mpc_rnn_sinewave.jpeg}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{MPC control}
     \framesubtitle{Model predictive control design}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.52\textwidth}
+        \begin{column}{0.48\textwidth}
             \begin{block}{Cost function minimized}
                 \footnotesize
                 \setlength{\abovedisplayskip}{0pt}\setlength{\belowdisplayskip}{2pt}
@@ -23,20 +76,9 @@
                 $J$ is minimized by gradient descent with Adam steps
                 (gradients through the RNN by autodiff)\par}
             \end{block}
-
         \end{column}
 
-        \begin{column}{0.44\textwidth}
-            \begin{exampleblock}{Performance}
-                \scriptsize
-                \begin{itemize}\setlength{\itemsep}{0pt}
-                    \item Good overall tracking of the reference.
-                    \item No phase lag: good RNN prediction.
-                    \item Full amplitude not reached.
-                    \item Open loop: no measurement feedback.
-                \end{itemize}
-            \end{exampleblock}
-
+        \begin{column}{0.48\textwidth}
             \begin{alertblock}{From $a_z$ to $z$}
                 \scriptsize
                 \begin{itemize}\setlength{\itemsep}{0pt}
