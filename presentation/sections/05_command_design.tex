@@ -10,8 +10,8 @@
             \begin{block}{Principle}
                 \begin{itemize}
                     \item \textbf{Input}: waypoints $z_i$ and passage times $t_i$
-                    \item One \textbf{quintic polynomial} per segment $[t_i, t_{i+1}]$, imposing $z$, $\dot z$ and $\ddot z$ at both ends (jerk free)
-                    \item Null speed at waypoints, null acceleration on arrival $\Rightarrow$ $\ddot z$ continuous
+                    \item One \textbf{polynomial function} per segment $[t_i, t_{i+1}]$, imposing $z$, $\dot z$ and $\ddot z$ at both ends
+                    \item Null speed at waypoints, null acceleration on arrival, $\ddot z$ continuous
                     \item \textbf{Output}: $z_{ref}(t)$ and the acceleration command $\ddot z_{ref}(t)$
                 \end{itemize}
             \end{block}
