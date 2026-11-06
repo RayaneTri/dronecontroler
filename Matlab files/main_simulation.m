@@ -24,7 +24,7 @@ use_linear_model = false;
 
 horizon_N = 20;
 
-Q = 100;
+Q = 10;
 R = 1;
 V = 1;
 W = 20;

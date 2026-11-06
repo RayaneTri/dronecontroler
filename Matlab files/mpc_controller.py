@@ -165,7 +165,7 @@ class MPC:
         self.a_s = torch.tensor([1.595419, 1.602934, 0.544539])
 
         # Bornes des consignes : plages vues à l'entraînement (au-delà, le RNN extrapole)
-        self.u_min = torch.tensor([0.5, -0.3, -0.3, -0.5])
+        self.u_min = torch.tensor([-1., -0.3, -0.3, -0.5])
         self.u_max = torch.tensor([2.5, 0.3, 0.3, 0.5])
 
         self.Te = 0.05
