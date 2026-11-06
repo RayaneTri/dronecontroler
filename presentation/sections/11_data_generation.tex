@@ -7,20 +7,11 @@
     \framesubtitle{First attempt: PRBS directly on the motor commands}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.30\textwidth}
+        \begin{column}{0.40\textwidth}
             \begin{block}{Objective}
                 \footnotesize
                 Generate rich input/output trajectories to identify a
-                nonlinear dynamic model of the drone in 3D.
-                \begin{itemize}\setlength{\itemsep}{0pt}
-                    \item Excite the four actuator commands around hover
-                    \item Capture the coupled 3D dynamics (12 variables)
-                    \item Store synchronized inputs and measured outputs
-                \end{itemize}
-            \end{block}
-
-            \begin{block}{Simulation setup}
-                \footnotesize
+                nonlinear dynamic model of the drone in 3D (4 inputs and 12 outputs).
                 \begin{itemize}\setlength{\itemsep}{0pt}
                     \item Sampling time: $T_s = 0.05\,\mathrm{s}$
                     \item $N = 2000$ samples per trajectory
@@ -33,7 +24,7 @@
             \end{block}
         \end{column}
 
-        \begin{column}{0.70\textwidth}
+        \begin{column}{0.60\textwidth}
             \centering
             \includegraphics[
                 width=\linewidth,
