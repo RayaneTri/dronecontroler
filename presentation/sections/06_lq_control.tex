@@ -1,0 +1,52 @@
+% ==============================================================================
+% LQ CONTROL
+% ==============================================================================
+
+\begin{frame}{LQ control}
+    \framesubtitle{Linear-quadratic control design}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Control principle}
+                \centering
+                \begin{tikzpicture}[
+                    node distance=0.75cm,
+                    block/.style={
+                        draw,
+                        align=center,
+                        minimum height=0.65cm,
+                        text width=1.15cm,
+                        inner sep=2pt,
+                        font=\scriptsize
+                    },
+                    arrow/.style={
+                        -{Latex[length=3mm, width=2mm]},
+                        line width=1.2pt
+                    }
+                ]
+                    \node[font=\tiny] (reference) {};
+                    \node[block, right=of reference] (lqr) {LQ\\internal model};
+                    \node[block, right=of lqr] (system) {Drone\\system};
+                    \node[font=\tiny, right=of system] (output) {};
+
+                    \draw[arrow] (reference) -- node[above, font=\tiny] {$r$} (lqr);
+                    \draw[arrow] (lqr) -- node[above, font=\tiny] {$u$} (system);
+                    \draw[arrow] (system) -- node[above, font=\tiny] {$a_z$} (output);
+                \end{tikzpicture}
+            \end{block}
+
+            \begin{exampleblock}{Performance}
+                Add here the main performance result or metric.
+            \end{exampleblock}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[
+                width=\linewidth,
+                height=5.5cm,
+                keepaspectratio
+            ]{linear lqr sinewave input.jpeg}
+        \end{column}
+    \end{columns}
+\end{frame}

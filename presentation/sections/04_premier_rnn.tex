@@ -11,17 +11,27 @@
             \begin{block}{Parameters}
                 \begin{itemize}
                     \item One scalar input $u_t$ and one scalar output $\hat{y}_t$
-                    \item   \begin{block}{Forward equations}
-                                \begin{equation*}
-                                    h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
-                                \end{equation*}
-                                \begin{equation*}
-                                    \hat{y}_t = W_{hy}h_t + b_y
-                                \end{equation*}
-                            \end{block}
                     \item Hidden state dimension: $16$
-                    \item Early-stoppiong to avoid overfitting
+                    \item Early stopping to avoid overfitting
                 \end{itemize}
+            \end{block}
+
+            \begin{block}{Forward equations}
+                \begin{equation*}
+                    h_t = \tanh(W_{ih}u_t + W_{hh}h_{t-1} + b)
+                \end{equation*}
+                \begin{equation*}
+                    \hat{y}_t = W_{hy}h_t + b_y
+                \end{equation*}
+            \end{block}
+
+            \begin{block}{Least-squares criterion}
+                \begin{equation*}
+                    \hat{\boldsymbol{a}}
+                    = \underset{\boldsymbol{a}}{\arg\min}
+                    \sum_{i=1}^{N}
+                    \left(y_{\infty,i} - \hat{y}_\infty(u_i)\right)^2
+                \end{equation*}
             \end{block}
         \end{column}
 
@@ -33,10 +43,10 @@
                     minimum width=1.8cm, minimum height=0.9cm, align=center},
                 arrow/.style={-{Latex[length=2mm]}, thick, CSSlate}
             ]
-                \node[box] (input) {$u_t$\\input};
+                \node[box] (input) {$u_t$\\\text{input}};
                 \node[box, right=of input] (rnn) {RNN\\$16$ hidden units};
-                \node[box, right=of rnn] (head) {Linear\\head};
-                \node[box, right=of head] (output) {$\hat{y}_t$\\output};
+                \node[box, right=of rnn] (head) {Linear\\\text{head}};
+                \node[box, right=of head] (output) {$\hat{y}_t$\\\text{output}};
                 \draw[arrow] (input) -- (rnn);
                 \draw[arrow] (rnn) -- (head);
                 \draw[arrow] (head) -- (output);
@@ -45,15 +55,6 @@
             \end{tikzpicture}
 
         \end{column}
-
-            \begin{block}{Least-squares criterion}
-                \begin{equation*}
-                    \hat{\boldsymbol{a}}
-                    = \underset{\boldsymbol{a}}{\arg\min}
-                    \sum_{i=1}^{N}
-                    \left(y_{\infty,i} - \hat{y}_\infty(u_i)\right)^2
-                \end{equation*}
-            \end{block}
 
     \end{columns}
 \end{frame}

@@ -96,8 +96,8 @@ plt.title(
 plt.legend(frameon=True, framealpha=0.95)
 plt.grid(True, linestyle="--", linewidth=1.5, alpha=0.4)
 plt.tight_layout()
-plt.savefig(
-    os.path.join(FIGURES_DIR, "least_squares_model_validation.png"),
-    bbox_inches="tight",
-)
+# plt.savefig(
+#     os.path.join(FIGURES_DIR, "least_squares_model_validation.png"),
+#     bbox_inches="tight",
+# )
 plt.show()
