@@ -1,6 +1,0 @@
-\babel@toc {english}{}\relax 
-\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
-\beamer@sectionintoc {2}{Dataset Validation}{4}{0}{2}
-\beamer@sectionintoc {3}{System Modeling}{5}{0}{3}
-\beamer@sectionintoc {4}{First RNN}{7}{0}{4}
-\beamer@sectionintoc {5}{Z-axis control}{9}{0}{5}

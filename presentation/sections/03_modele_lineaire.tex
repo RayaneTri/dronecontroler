@@ -2,84 +2,46 @@
 % SECTION 2: LINEAR MODELING & IDENTIFICATION
 % ==============================================================================
 \begin{frame}{System Modeling}
-    \framesubtitle{Linear Model: Hammerstein Approach}
+    \framesubtitle{Linear Model}
     \begin{columns}[T]
-        \begin{column}{0.5\textwidth}
-            \begin{block}{Static Characteristic $N(u)$}
-                3rd-order polynomial identified on steady-state regimes:
+        \begin{column}{0.54\textwidth}
+            \small
+            \begin{block}{State Function}
+                First-order lag driven by $N(u)$:
                 \begin{equation*}
-                    v(t) = N(u) = a_3 u^3 + a_2 u^2 + a_1 u + a_0
+                    \begin{cases}
+                        \dot{x}(t) = -\dfrac{x(t)}{\tau} + \dfrac{N(u(t))}{\tau}\\[2mm]
+                        a_z(t) = x(t)
+                    \end{cases}
                 \end{equation*}
-                \textbf{Tau identification}
+            \end{block}
+            \begin{block}{Parameter Identification}
+                - \textbf{Static characteristic $N(u)$}: 3rd-order polynomial identified on steady-state regimes:
+                \begin{equation*}
+                    a_z = N(u) = a_3 u^3 + a_2 u^2 + a_1 u + a_0
+                \end{equation*}
+                - \textbf{Tau identification}
+
+                {\scriptsize $a_3 \approx -6.05,\ a_2 \approx 1.1\!\times\!10^{-3},\ a_1 \approx 26.1,\ a_0 \approx -9.81,\ \tau \approx 0.22\ \mathrm{s}$}
             \end{block}
         \end{column}
 
-        \begin{column}{0.5\textwidth}
+        \begin{column}{0.46\textwidth}
 
                 \centering
                 \includegraphics[
                     width=\linewidth,
-                    height=2.6cm,
+                    height=2.3cm,
                     keepaspectratio
-                ]{regression sur caracteristique statique.png}
+                ]{static_characteristic_regression.png}
 
 
                 \centering
                 \includegraphics[
                     width=\linewidth,
-                    height=5.0cm,
+                    height=6.2cm,
                     keepaspectratio
-                ]{hammerstein_model_validation.png}
-                \includegraphics[
-                width=\linewidth,
-                height=2.75cm,
-                keepaspectratio
-            ]{least_squares_model_validation.png}
-        \end{column}
-    \end{columns}
-\end{frame}
-
-\begin{frame}{System Modeling}
-    \framesubtitle{Linear Model: Least Square Method}
-    \begin{columns}[T]
-        \begin{column}{0.52\textwidth}
-
-            \begin{block}{Model equations}
-                \begin{align*}
-                    y_k(t+1)
-                        &= a\,y_k(t) + b\,u_k(t) + c \\
-                        &= \boldsymbol{\varphi}_k^{\mathsf T}
-                           \boldsymbol{\theta}.
-                \end{align*}
-                \[
-                    \boldsymbol{\varphi}_k^{\mathsf T} =
-                    \begin{bmatrix} y_k(t) & u_k(t) & 1 \end{bmatrix}
-                    \qquad
-                    \boldsymbol{\theta} =
-                    \begin{bmatrix} a & b & c \end{bmatrix}^{\mathsf T}.
-                \]
-
-                The least-squares estimate is
-                \begin{equation*}
-                    \boldsymbol{\theta}^{\star}
-                        =
-                        \left(\boldsymbol{\Phi}^{\mathsf T}
-                        \boldsymbol{\Phi}\right)^{-1}
-                        \boldsymbol{\Phi}^{\mathsf T}\boldsymbol{Y}.
-                \end{equation*}
-            \end{block}
-        \end{column}
-
-        \begin{column}{0.48\textwidth}
-            \centering
-
-            \vspace{0.15cm}
-
-            \includegraphics[
-                width=\linewidth,
-                height=2.75cm,
-                keepaspectratio
-            ]{least_squares_model_validation.png}
+                ]{linear_validation.png}
         \end{column}
     \end{columns}
 \end{frame}

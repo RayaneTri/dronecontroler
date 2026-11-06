@@ -7,21 +7,21 @@
 
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.31\textwidth}
-            \begin{block}{LQ control}
+            \begin{block}{LQ control with Linear Model}
                 \begin{itemize}
-                    \item Simple and computationally efficient.
-                    \item Based on a linear model.
-                    \item No state measurement feedback.
+                    \item Simple and very fast.
+                    \item Lack prediction.
+                    \item Phase shifting.
                 \end{itemize}
             \end{block}
         \end{column}
 
         \begin{column}{0.31\textwidth}
-            \begin{block}{MPC control}
+            \begin{block}{MPC control with RNN}
                 \begin{itemize}
-                    \item Uses a predictive RNN model.
-                    \item Handles nonlinear dynamics.
-                    \item No EKF state correction.
+                    \item Prediction.
+                    \item Internal state diverges from reality.
+                    \item No feedback loop.
                 \end{itemize}
             \end{block}
         \end{column}
@@ -29,9 +29,7 @@
         \begin{column}{0.31\textwidth}
             \begin{exampleblock}{MPC with EKF}
                 \begin{itemize}
-                    \item Corrected state estimation.
                     \item Feedback from measurements.
-                    \item Improved robustness.
                 \end{itemize}
             \end{exampleblock}
         \end{column}

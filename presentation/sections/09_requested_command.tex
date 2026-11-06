@@ -6,29 +6,38 @@
     \framesubtitle{MPC control with EKF feedback}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.45\textwidth}
-            \begin{block}{Control objective}
-                Replace this text with the analysis of the requested command:
-                \begin{itemize}
-                    \item Describe the reference trajectory.
-                    \item Explain how the EKF estimate is used by the MPC.
-                    \item Discuss tracking accuracy and transient behavior.
-                \end{itemize}
-            \end{block}
+        \begin{column}{0.38\textwidth}
+            \centering
+            \includegraphics[
+                width=\linewidth,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_1.png}
 
-            \begin{exampleblock}{Performance}
-                Add here the main tracking result or metric.
-            \end{exampleblock}
+            \vspace{0.12cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_2.png}
+
+            \vspace{0.12cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_3.png}
         \end{column}
 
-        \begin{column}{0.55\textwidth}
+        \begin{column}{0.62\textwidth}
             \centering
-            \fbox{%
-                \parbox[c][5.5cm][c]{0.9\linewidth}{%
-                    \centering
-                    \textit{Insert requested-command figure here}
-                }%
-            }
+            \includegraphics[
+                width=0.96\linewidth,
+                height=0.64\textheight,
+                keepaspectratio
+            ]{ekf_position_control_noisy.png}
         \end{column}
     \end{columns}
 \end{frame}
