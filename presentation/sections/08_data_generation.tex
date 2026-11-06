@@ -1,0 +1,88 @@
+% ==============================================================================
+% SECTION 8: PRBS DATA GENERATION
+% ==============================================================================
+\section{Data Generation}
+
+\begin{frame}{Data generation}
+    \framesubtitle{PRBS excitation in the 3D drone workspace}
+
+    \begin{columns}[T,onlytextwidth]
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Objective}
+                Generate sufficiently rich input/output trajectories to
+                identify a nonlinear dynamic model of the drone.
+                \begin{itemize}
+                    \item Excite the four actuator commands around hover
+                    \item Capture the coupled 3D dynamics (12 variables)
+                    \item Store synchronized inputs and measured outputs
+                \end{itemize}
+            \end{block}
+
+            \begin{block}{Simulation setup}
+                \begin{itemize}
+                    \item Sampling time: $T_s = 0.05\,\mathrm{s}$
+                    \item $N = 2000$ samples per trajectory
+                    \item $3000$ independent experiments
+                    \item Initial hover command: $U_{\mathrm{hover}} = 0.55$
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{APRBS modes}
+                We don't directly generate u inputs (unusable data).
+
+                Four independently generated piecewise-constant modes:
+                \[
+                    \delta = [\delta_T,\delta_r,\delta_p,\delta_y]
+                \]
+                
+                Each level is sampled uniformly and held for a random duration
+                between $1$ and $3$ seconds.
+            \end{block}
+
+            \begin{exampleblock}{Initial phase}
+                The excitation starts after $t_{\mathrm{start}}=2\,\mathrm{s}$,
+                allowing the drone to stabilize at hover.
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Data generation}
+    \framesubtitle{From modal excitation to motor commands}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Mixer matrix}
+                The four modal perturbations are mixed into the actuator
+                commands:
+                \[
+                    U = U_{\mathrm{hover}} +
+                    \delta
+                    \begin{bmatrix}
+                    1&1&-1&1\\
+                    1&-1&-1&-1\\
+                    1&-1&1&1\\
+                    1&1&1&-1
+                    \end{bmatrix}^{\!T}
+                \]
+                The resulting commands are clipped to the allowed range.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Input/output data}
+                \begin{itemize}
+                    \item Inputs: $U_1,\ldots,U_4$
+                    \item Outputs: angles, angular velocities,
+                          accelerations and angular accelerations
+                    \item One trajectory is stored as a sequence of $N$
+                          time steps
+                    \item Different random seeds improve excitation diversity
+                \end{itemize}
+            \end{block}
+
+        \end{column}
+    \end{columns}
+\end{frame}
