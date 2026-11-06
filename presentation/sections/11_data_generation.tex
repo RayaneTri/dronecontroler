@@ -7,7 +7,7 @@
     \framesubtitle{First attempt: PRBS directly on the motor commands}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
+        \begin{column}{0.30\textwidth}
             \begin{block}{Objective}
                 \footnotesize
                 Generate rich input/output trajectories to identify a
@@ -26,20 +26,20 @@
                     \item $N = 2000$ samples per trajectory
                     \item $3000$ independent experiments
                     \item Hover command: $U_{\mathrm{hover}} = 0.55$
+                    \item Four independent piecewise-constant modes
+                    $\delta=[\delta_T,\delta_r,\delta_p,\delta_y]$,
+                    held for $1$ to $3$\,s around hover
                 \end{itemize}
             \end{block}
         \end{column}
 
-        \begin{column}{0.48\textwidth}
-            \begin{block}{APRBS on the motor commands}
-                \footnotesize
-                Four independent piecewise-constant modes
-                \[
-                    \delta = [\delta_T,\delta_r,\delta_p,\delta_y]
-                \]
-                around hover, each level drawn uniformly and held for
-                $1$ to $3$\,s, then mapped to $U_1,\dots,U_4$.
-            \end{block}
+        \begin{column}{0.70\textwidth}
+            \centering
+            \includegraphics[
+                width=\linewidth,
+                height=0.58\textheight,
+                keepaspectratio
+            ]{PRBS_sans_flight_controller.jpeg}
 
             \begin{alertblock}{Why it was not enough}
                 \footnotesize
