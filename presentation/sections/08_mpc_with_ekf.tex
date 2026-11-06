@@ -2,52 +2,120 @@
 % MPC WITH EKF
 % ==============================================================================
 
+\begin{frame}{Extended Kalman Filter}
+    \framesubtitle{Estimator built on the RNN model}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Model}
+                \footnotesize
+                State $x_k = (h_k,\; v_{z,k},\; z_k)$: RNN hidden state,
+                vertical velocity, height.
+                \setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{0pt}
+                \begin{align*}
+                    x_k &= f(x_{k-1},u_{k-1}) + w_k, & w_k &\sim \mathcal{N}(0,Q)\\
+                    y_k &= H x_k + c + v_k, & v_k &\sim \mathcal{N}(0,R)
+                \end{align*}
+            \end{block}
+
+            \begin{block}{The function $f$}
+                \footnotesize
+                \setlength{\abovedisplayskip}{0pt}\setlength{\belowdisplayskip}{2pt}
+                \begin{align*}
+                    h_k &= \tanh(W_x h_{k-1} + W_u u_{k-1} + b) && \text{RNN step}\\
+                    v_{z,k} &= v_{z,k-1} + a_{z,k}\,\Delta t && \text{integrate}\\
+                    z_k &= z_{k-1} + v_{z,k}\,\Delta t && \text{integrate}
+                \end{align*}
+                $a_{z,k} = W_f h_k + b_f$ is encoded in $h_k$ (linear readout
+                of the RNN), so it is not a separate state.\\
+                Measured: $y_k=(a_{z,k},\, v_{z,k},\, z_k)$, so $c=(b_f, 0, 0)$.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Predict}
+                \footnotesize
+                \vspace{-6pt}
+                \begin{align*}
+                    \hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1},u_{k-1})\\
+                    P_{k|k-1} &= F_k P_{k-1|k-1} F_k^\top + Q,\quad F_k=\tfrac{\partial f}{\partial x}
+                \end{align*}
+            \end{block}
+
+            \begin{block}{Update}
+                \footnotesize
+                \vspace{-6pt}
+                \begin{align*}
+                    K_k &= P_{k|k-1} H^\top (H P_{k|k-1} H^\top + R)^{-1}\\
+                    \hat{x}_{k|k} &= \hat{x}_{k|k-1} + K_k\,(y_k - H\hat{x}_{k|k-1} - c)\\
+                    P_{k|k} &= (I-K_kH)\,P_{k|k-1}
+                \end{align*}
+            \end{block}
+
+            \begin{exampleblock}{Role in the MPC}
+                \footnotesize
+                $\hat{x}_{k|k}$ is the initial state of each MPC prediction.
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
 \begin{frame}{MPC with EKF}
     \framesubtitle{State estimation and predictive control}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.45\textwidth}
+        \begin{column}{0.56\textwidth}
             \begin{block}{Control principle}
                 \centering
+                \resizebox{0.88\linewidth}{!}{%
                 \begin{tikzpicture}[
-                auto,
-                >=Stealth,
-                thick,
-                node distance=1.4cm and 1.8cm,
-                block/.style={
-                    draw,
-                    rectangle,
-                    minimum height=0.7cm,
-                    minimum width=1.75cm,
-                    align=center,
-                    fill=blue!5,
-                    rounded corners=2pt,
-                    font=\scriptsize
+                    auto,
+                    >=Stealth,
+                    thick,
+                    block/.style={
+                        draw,
+                        rectangle,
+                        minimum height=0.7cm,
+                        minimum width=1.6cm,
+                        align=center,
+                        fill=blue!5,
+                        rounded corners=2pt,
+                        font=\scriptsize
+                    },
+                    mpc/.style={
+                        draw,
+                        minimum width=2.1cm,
+                        minimum height=1.3cm,
+                        fill=blue!5,
+                        rounded corners=2pt,
+                        label={[font=\scriptsize]above:\textbf{MPC} $\min_U J(U)$}
+                    }
+                ]
+                    \node[mpc] (mpc) {};
+                    \node[block, minimum width=1.2cm, minimum height=0.5cm, fill=white]
+                        (rnn) at ([yshift=-0.15cm]mpc.center)
+                        {RNN};
+                    \node[block, right=1.2cm of mpc] (sys)
+                        {\textbf{Drone}\\[-1pt]\tiny (system)};
+                    \node[block, below=1.3cm of $(mpc)!0.5!(sys)$] (ekf)
+                        {\textbf{EKF}\\[-1pt]\tiny predict + update};
+
+                    \node[left=0.6cm of mpc] (ref) {};
+                    \draw[->] (ref) -- node {$r$} (mpc.west);
+                    \draw[->] (mpc.east) -- node[name=u] {$u_k$} (sys.west);
+                    \draw[->] (sys.south) |- node[pos=0.25, right] {$y_k$} (ekf.east);
+                    \draw[->] (u.south) ++(0,-0.15) -- ++(0,-0.55)
+                        node[right, font=\tiny] {$u_{k-1}$} -- (u.south |- ekf.north);
+                    \draw[->] (ekf.west) -| node[pos=0.75, left] {$\hat{x}_{k|k}$} (mpc.south);
+                \end{tikzpicture}%
                 }
-            ]
-                \node (ref) {};
-                \node[block, below=0.35cm of ref] (mpc)
-                    {\textbf{MPC}\\[-1pt]\tiny $\min J(U)$};
-                \node[block, right=1.5cm of mpc] (system)
-                    {\textbf{Drone} \\ \textbf{System}};
-                \node[block, below=1.0cm of mpc] (rnn)
-                    {\textbf{RNN model}\\[-1pt]\tiny $(\hat{y},h)$};
-                \node[block, below=0.8cm of rnn] (ekf)
-                    {\textbf{EKF}\\[-1pt]\tiny $L(y-\hat{y})$};
 
-                \draw[->] (ref) -- node {$r$} (mpc);
-                \draw[->] (mpc) -- node[name=u] {$u$} (system);
-                \draw[->] (system.south) |- node[pos=0.2, right]
-                    {$y$} (ekf.east);
-                \draw[->, dashed] (u.center) |- (ekf.30);
-
-                \draw[->] (ekf.west) -- ++(-0.55,0) |- node[pos=0.2, left]
-                    {$\hat{h}$} (mpc.west);
-                \draw[->] ([xshift=-8pt]mpc.south) --
-                    node[left] {$U_{k \dots k+N}$} ([xshift=-8pt]rnn.north);
-                \draw[->] ([xshift=8pt]rnn.north) --
-                    node[right] {$\hat{y}_{k \dots k+N}$} ([xshift=8pt]mpc.south);
-                \end{tikzpicture}
+                \vspace{2pt}
+                {\scriptsize\raggedright
+                $y_k=(a_z, v_z, z)$: measurements\\
+                $\hat{x}_{k|k}=(\hat{h}, \hat{v}_z, \hat{z})$: estimated state,
+                initial state of the RNN prediction at each step\par}
             \end{block}
 
             % \begin{exampleblock}{Performance}
@@ -61,21 +129,43 @@
             % \end{exampleblock}
         \end{column}
 
-        \begin{column}{0.55\textwidth}
+        \begin{column}{0.41\textwidth}
+            \begin{block}{One control step}
+                \footnotesize
+                \begin{enumerate}\setlength{\itemsep}{2pt}
+                    \item EKF: correct the state with the new
+                    measurement $y_k$ and $u_{k-1}$
+                    $\Rightarrow \hat{x}_{k|k}$
+                    \item MPC: 50 Adam steps on $J(U)$, the RNN prediction
+                    starting from $\hat{x}_{k|k}$
+                    \item Apply $u_k$, shift $U$ by one step
+                    (warm start for $k+1$)
+                \end{enumerate}
+                \vspace{2pt}
+                {\scriptsize Sampling time $T_e = 0.05$\,s,
+                horizon $N=20$ (1\,s).\par}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{MPC without vs with EKF}
+    \framesubtitle{Tracking of a sinusoidal $a_z$ reference}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.49\textwidth}
             \centering
-            \includegraphics[
-                width=\linewidth,
-                height=0.38\textheight,
-                keepaspectratio
-            ]{mpc_open_loop_sinewave.png}
+            {\small\textbf{Without EKF}}\\[1pt]
+            {\scriptsize open loop: RNN internal state only}\\[2pt]
+            \includegraphics[width=\linewidth]{mpc_open_loop_sinewave_crop.png}
+        \end{column}
 
-            \vspace{0.12cm}
-
-            \includegraphics[
-                width=\linewidth,
-                height=0.38\textheight,
-                keepaspectratio
-            ]{mpc_ekf_sinewave.png}
+        \begin{column}{0.49\textwidth}
+            \centering
+            {\small\textbf{With EKF}}\\[1pt]
+            {\scriptsize state corrected by the measurements}\\[2pt]
+            \includegraphics[width=\linewidth]{mpc_ekf_sinewave_crop.png}
         \end{column}
     \end{columns}
 \end{frame}
