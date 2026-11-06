@@ -166,11 +166,11 @@ def verifier(traj: TRAJECTOIRE_ESPACE, tol=1e-6):
 
 
 if __name__ == "__main__":
-    points = [[0, 0, 0], [1, 0, 1], [1, 1, 1.5], [0, 1, 1], [0, 0, 0.5]]
+    points = [[0,0,0], [0,0,0.5], [0, 0, -0.2]]
     traj = TRAJECTOIRE_ESPACE(points, v_moy=0.5)
     verifier(traj)
-    verifier(TRAJECTOIRE_ESPACE(points, temps=[0, 2, 5, 7, 12]))
-    verifier(TRAJECTOIRE_ESPACE(points, duree=20, t0=1))
+    verifier(TRAJECTOIRE_ESPACE(points, temps=[0, 5, 10]))
+    verifier(TRAJECTOIRE_ESPACE(points, duree=10, t0=1))
     verifier(TRAJECTOIRE_ESPACE([[0, 0, 0], [1, 2, 3]], duree=5))
     print("Vérifications OK")
     print("Instants de passage :", np.round(traj.temps, 3))
