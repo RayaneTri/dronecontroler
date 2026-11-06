@@ -6,27 +6,36 @@
     \framesubtitle{MPC control with EKF feedback}
 
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.45\textwidth}
-            \begin{block}{Control objective}
-                The EKF filters the noisy position measurement before it is
-                used by the predictive controller.
-                \begin{itemize}
-                    \item State estimation from noisy measurements.
-                    \item Improved feedback for position tracking.
-                    \item More robust closed-loop response.
-                \end{itemize}
-            \end{block}
-
-            \begin{exampleblock}{Performance}
-                Position tracking remains stable despite measurement noise.
-            \end{exampleblock}
-        \end{column}
-
-        \begin{column}{0.55\textwidth}
+        \begin{column}{0.38\textwidth}
             \centering
             \includegraphics[
                 width=\linewidth,
-                height=0.72\textheight,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_1.png}
+
+            \vspace{0.12cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_2.png}
+
+            \vspace{0.12cm}
+
+            \includegraphics[
+                width=\linewidth,
+                height=1.65cm,
+                keepaspectratio
+            ]{step_3.png}
+        \end{column}
+
+        \begin{column}{0.62\textwidth}
+            \centering
+            \includegraphics[
+                width=0.96\linewidth,
+                height=0.64\textheight,
                 keepaspectratio
             ]{asservissement position ekf présence de bruit.png}
         \end{column}
