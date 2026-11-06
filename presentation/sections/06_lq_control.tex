@@ -10,28 +10,30 @@
             \begin{block}{Control principle}
                 \centering
                 \begin{tikzpicture}[
-                    node distance=0.75cm,
+                    auto,
+                    >=Stealth,
+                    thick,
+                    node distance=1.2cm,
                     block/.style={
                         draw,
+                        rectangle,
                         align=center,
-                        minimum height=0.65cm,
-                        text width=1.15cm,
+                        minimum height=0.8cm,
+                        minimum width=1.55cm,
                         inner sep=2pt,
+                        fill=blue!5,
+                        rounded corners=2pt,
                         font=\scriptsize
-                    },
-                    arrow/.style={
-                        -{Latex[length=3mm, width=2mm]},
-                        line width=1.2pt
                     }
                 ]
-                    \node[font=\tiny] (reference) {};
-                    \node[block, right=of reference] (lqr) {LQ\\+ Linear Model};
-                    \node[block, right=of lqr] (system) {Drone\\system};
-                    \node[font=\tiny, right=of system] (output) {};
+                    \node (reference) {};
+                    \node[block, right=of reference] (lqr) {\textbf{LQ}\\[-1pt]\tiny Linear model};
+                    \node[block, right=of lqr] (system) {\textbf{System}\\[-1pt]\tiny (Drone)};
+                    \node[right=0.55cm of system] (output) {};
 
-                    \draw[arrow] (reference) -- node[above, font=\tiny] {$r$} (lqr);
-                    \draw[arrow] (lqr) -- node[above, font=\tiny] {$u$} (system);
-                    \draw[arrow] (system) -- node[above, font=\tiny] {$a_z$} (output);
+                    \draw[->] (reference) -- node {$r$} (lqr);
+                    \draw[->] (lqr) -- node {$u$} (system);
+                    \draw[->] (system) -- node {$a_z$} (output);
                 \end{tikzpicture}
             \end{block}
 

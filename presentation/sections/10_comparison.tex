@@ -1,0 +1,39 @@
+% ==============================================================================
+% CONTROLLER COMPARISON
+% ==============================================================================
+
+\begin{frame}{Comparison}
+    \framesubtitle{LQ, MPC and MPC with EKF}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.31\textwidth}
+            \begin{block}{LQ control}
+                \begin{itemize}
+                    \item Simple and computationally efficient.
+                    \item Based on a linear model.
+                    \item No state measurement feedback.
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{block}{MPC control}
+                \begin{itemize}
+                    \item Uses a predictive RNN model.
+                    \item Handles nonlinear dynamics.
+                    \item No EKF state correction.
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{exampleblock}{MPC with EKF}
+                \begin{itemize}
+                    \item Corrected state estimation.
+                    \item Feedback from measurements.
+                    \item Improved robustness.
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}

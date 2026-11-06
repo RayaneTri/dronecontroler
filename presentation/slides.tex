@@ -88,7 +88,7 @@
         };
     \end{tikzpicture}%
 }
-\begin{frame}[plain]
+\begin{frame}[plain,noframenumbering]
     \titlepage
 \end{frame}
 }
@@ -98,7 +98,7 @@
 % ------------------------------------------------------------------------------
 {
 \setbeamertemplate{headline}{}
-\begin{frame}{Table of Contents}
+\begin{frame}[noframenumbering]{Table of Contents}
     \small
     \tableofcontents[hideallsubsections]
 \end{frame}
@@ -116,7 +116,8 @@
 \input{sections/05_command_design}
 \input{sections/06_lq_control}
 \input{sections/07_mpc_control}
-\section{Advanced control}
-\input{sections/08_data_generation}
+\input{sections/08_mpc_with_ekf}
+\input{sections/09_requested_command}
+\input{sections/10_comparison}
 
 \end{document}
