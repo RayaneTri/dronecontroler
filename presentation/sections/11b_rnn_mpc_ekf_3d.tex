@@ -1,0 +1,144 @@
+% ==============================================================================
+% ADVANCED CONTROL LAW: NEW RNN, 3D MPC AND 3D EKF
+% ==============================================================================
+
+% ------------------------------------------------------------------------------
+% NEW RNN MODEL
+% ------------------------------------------------------------------------------
+\begin{frame}{New RNN model}
+    \framesubtitle{Trained on flight controller + drone simulations}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.5\textwidth}
+            \begin{block}{What the RNN learns}
+                \centering
+                \resizebox{\linewidth}{!}{%
+                \begin{tikzpicture}[
+                    >=Stealth, thick,
+                    block/.style={draw, rectangle, minimum height=0.8cm,
+                        minimum width=1.6cm, align=center, fill=blue!5,
+                        rounded corners=2pt, font=\scriptsize}
+                ]
+                    \node[block] (fc) {\textbf{Flight}\\\textbf{controller}};
+                    \node[block, right=1.0cm of fc] (drone) {\textbf{Drone}\\\tiny (Simulink)};
+                    \draw[->] (fc) -- node[above, font=\tiny] {$U_{1..4}$} (drone);
+                    \draw[->] ([xshift=-0.9cm]fc.west)
+                        node[left, font=\scriptsize, align=center]
+                        {$z_{\mathrm{ref}}, \phi_{\mathrm{ref}},$\\
+                         $\theta_{\mathrm{ref}}, \psi_{\mathrm{ref}}$}
+                        -- (fc.west);
+                    \draw[->] (drone.east) -- ++(0.9,0)
+                        node[right, font=\scriptsize] {$a_x, a_y, z$};
+                    \draw[->, red!70!black] (drone.south) -- ++(0,-0.4) -|
+                        node[pos=0.25, below, font=\tiny] {attitude, altitude} (fc.south);
+                    \node[draw, dashed, gray, rounded corners, inner sep=6pt,
+                        fit={(fc) (drone) ([yshift=-0.55cm]drone.south)
+                             ([yshift=0.3cm]fc.north)}] (box) {};
+                    \node[gray, font=\tiny\itshape, anchor=north]
+                        at (box.north) {system identified by the RNN};
+                \end{tikzpicture}%
+                }
+            \end{block}
+
+            \begin{block}{Model and training}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Elman RNN, 32 hidden units, 1.3\,k parameters
+                    \item 4 inputs $\rightarrow$ 3 outputs $(a_x, a_y, z)$
+                    \item 3000 trajectories of 1941 steps, 70\,\% for training
+                    \item Adam, $\mathrm{lr}=10^{-3}$, 100 epochs, batch 32
+                    \item Test RMSE: $a_x$ 0.24, $a_y$ 0.23\,m/s$^2$,
+                    $z$ 0.048\,m
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.47\textwidth}
+            \begin{alertblock}{Why a new model?}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item The first RNN only described the $z$ axis
+                    ($u \rightarrow a_z$).
+                    \item 3D control needs $x$ and $y$, but raw motor data is
+                    unusable (unstable drone).
+                    \item With the flight controller inside, the identified
+                    system is stable, with bounded physical inputs.
+                    \item The MPC sends references to the flight
+                    controller, like an autopilot.
+                \end{itemize}
+            \end{alertblock}
+
+            \begin{block}{Choice of the outputs}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item $z$ is held by the altitude loop: learned
+                    directly, no double integration (lesson from $a_z$).
+                    \item No position loop on $x, y$: learn $a_x, a_y$, then
+                    integrate.
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% 3D MPC
+% ------------------------------------------------------------------------------
+\begin{frame}{3D MPC}
+    \framesubtitle{Position control through the flight controller}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.52\textwidth}
+            \begin{block}{Cost function minimized}
+                \footnotesize
+                \setlength{\abovedisplayskip}{0pt}\setlength{\belowdisplayskip}{2pt}
+                \[
+                    J(U) = \sum_{i=1}^{N} Q\,\big\|\hat{p}_{k+i} - r_{k+i}\big\|^2
+                    + R\,\big\|u_{k+i-1} - u_{k+i-2}\big\|^2
+                \]
+                {\scriptsize\raggedright
+                $\hat{p}=(\hat{x}, \hat{y}, \hat{z})$: position predicted
+                with the RNN\\
+                $u = (z_{\mathrm{ref}}, \phi_{\mathrm{ref}},
+                \theta_{\mathrm{ref}}, \psi_{\mathrm{ref}})$: references
+                sent to the flight controller\\
+                $r$: 3D reference trajectory\par}
+            \end{block}
+
+            \begin{block}{Prediction over the horizon}
+                \footnotesize
+                \setlength{\abovedisplayskip}{0pt}\setlength{\belowdisplayskip}{2pt}
+                \begin{align*}
+                    (a_{x}, a_{y}, z)_{k} &= \mathrm{RNN}(h_{k-1}, u_{k-1})\\
+                    v_{k} &= v_{k-1} + a_{k}\,\Delta t \quad (x, y)\\
+                    p_{k} &= p_{k-1} + v_{k}\,\Delta t \quad (x, y)
+                \end{align*}
+                {\scriptsize $z$ is read directly from the RNN output.\par}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.45\textwidth}
+            \begin{block}{Constraints}
+                \footnotesize
+                $u_{\min} \le u \le u_{\max}$: the range seen in training
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item $z_{\mathrm{ref}} \in [0.5,\ 2.5]$\,m
+                    \item $\phi_{\mathrm{ref}}, \theta_{\mathrm{ref}}
+                    \in [-0.3,\ 0.3]$\,rad
+                    \item $\psi_{\mathrm{ref}} \in [-0.5,\ 0.5]$\,rad
+                \end{itemize}
+                {\scriptsize Outside this range the RNN would extrapolate.\par}
+            \end{block}
+
+            \begin{exampleblock}{Settings}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item 50 Adam steps per sample ($\mathrm{lr}=0.05$),
+                    warm start
+                    \item $T_e = 0.05$\,s, $Q = R = 1$
+                    \item $N=20$ (1\,s): with $N=10$ (0.5\,s) the MPC diverges
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
