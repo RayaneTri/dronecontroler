@@ -1,74 +1,31 @@
 % ==============================================================================
 % APPENDIX: FLIGHT CONTROLLER VERSION 1
 % ==============================================================================
+\appendix
 \section{Appendix: Flight controller version 1}
 
 \begin{frame}{Appendix: flight controller version 1}
     \framesubtitle{MPCC reference commands and PID attitude loops}
+    \centering
+    \includegraphics[
+        width=\paperwidth,
+        height=0.86\textheight,
+        keepaspectratio
+    ]{schema_mpcc_block.png}
+\end{frame}
 
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.53\textwidth}
-            \centering
-            \resizebox{\linewidth}{!}{%
-            \begin{tikzpicture}[
-                blk/.style={draw=CSNavy,thick,fill=white,align=center,
-                    inner sep=3pt,minimum height=8mm},
-                pid/.style={draw=red!70!black,thick,fill=white,
-                    minimum width=12mm,minimum height=7mm},
-                sum/.style={circle,draw=red!70!black,thick,fill=white,
-                    minimum size=5mm,inner sep=0pt},
-                sig/.style={->,thick,CSNavy},
-                fb/.style={->,thick,red!70!black},
-                >={Stealth[length=2mm]},
-                hop/.style={preaction={draw=white,line width=3pt}}]
-                \node[blk,minimum width=17mm,minimum height=26mm] (mpcc)
-                    at (0,0) {\scriptsize MPCC\\[-2pt]\scriptsize RNN model};
-                \node[sum] (s1) at (2.2,1.0) {};
-                \node[sum] (s2) at (2.2,0) {};
-                \node[sum] (s3) at (2.2,-1.0) {};
-                \node[pid] (p1) at (4.1,1.0) {\scriptsize PID$_\phi$};
-                \node[pid] (p2) at (4.1,0) {\scriptsize PID$_\theta$};
-                \node[pid] (p3) at (4.1,-1.0) {\scriptsize PID$_r$};
-                \node[blk,minimum width=10mm,minimum height=26mm] (mix)
-                    at (6.0,0) {$\bar M^{-1}$};
-                \node[blk,minimum width=20mm,minimum height=26mm] (drone)
-                    at (8.5,0) {\scriptsize Drone\\[-2pt]\scriptsize Simulink};
+\begin{frame}{Appendix: flight controller version 1}
+    \framesubtitle{Architecture and limitation}
+    \begin{block}{Architecture}
+        The MPCC computes references for roll, pitch, yaw rate and thrust.
+        Each attitude reference was tracked directly by a PID controller,
+        before the motor mixing stage.
+    \end{block}
 
-                \draw[sig] (mpcc.east |- s1) -- node[above,font=\scriptsize]
-                    {$\phi_{\rm ref}$} (s1);
-                \draw[sig] (mpcc.east |- s2) -- node[above,font=\scriptsize]
-                    {$\theta_{\rm ref}$} (s2);
-                \draw[sig] (mpcc.east |- s3) -- node[above,font=\scriptsize]
-                    {$r_{\rm ref}$} (s3);
-                \draw[sig] (s1) -- (p1);
-                \draw[sig] (s2) -- (p2);
-                \draw[sig] (s3) -- (p3);
-                \draw[sig] (p1) -- (mix.west |- p1);
-                \draw[sig] (p2) -- (mix.west |- p2);
-                \draw[sig] (p3) -- (mix.west |- p3);
-                \draw[sig] (mix) -- (drone);
-                \draw[fb,hop] (drone.east |- s1) -- (9.8,1.0) -- (9.8,-2.0)
-                    -- (2.2,-2.0) -- (s1.south);
-                \draw[fb,hop] (9.8,1.0) -- (s2.south);
-                \draw[fb,hop] (9.8,1.0) -- (s3.south);
-                \node[font=\scriptsize,red!70!black] at (6.2,-2.0)
-                    {measured attitude angles};
-            \end{tikzpicture}}
-        \end{column}
-
-        \begin{column}{0.45\textwidth}
-            \begin{block}{Architecture}
-                The MPCC computes references for roll, pitch, yaw rate and
-                thrust. Each attitude reference was tracked directly by a
-                PID controller, before the motor mixing stage.
-            \end{block}
-
-            \begin{block}{Limitation}
-                This first architecture was stable, but the angle-only
-                feedback did not provide enough responsiveness. It was
-                therefore replaced by the cascade controller presented in
-                the main section, with a fast angular-rate inner loop.
-            \end{block}
-        \end{column}
-    \end{columns}
+    \begin{block}{Limitation}
+        This first architecture was stable, but the angle-only feedback did
+        not provide enough responsiveness. It was therefore replaced by the
+        cascade controller presented in the main section, with a fast
+        angular-rate inner loop.
+    \end{block}
 \end{frame}
