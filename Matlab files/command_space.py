@@ -11,7 +11,7 @@ NB_COEFS = DEGRE + 1
 
 class TRAJECTOIRE_ESPACE:
     """
-    Trajectoire 3D polynomiale par morceaux (minimum snap) passant par des points de passage
+    Trajectoire 3D polynomiale par morceaux passant par des points de passage
         points : liste de N >= 2 points (x, y, z)
         temps : instants de passage (optionnel, strictement croissants, longueur N)
         v_moy : vitesse moyenne utilisée si temps n'est pas donné (m/s)
@@ -37,7 +37,7 @@ class TRAJECTOIRE_ESPACE:
             if np.any(np.diff(self.temps) <= 0):
                 raise ValueError("temps doit être strictement croissant")
         self.durees = np.diff(self.temps)
-        self.coefs = self._coefficients()   # (n_segments, 8, 3), en temps local tau = t - temps[i]
+        self.coefs = self._coefficients()
 
     def _allouer_temps(self):
         """
