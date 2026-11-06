@@ -142,3 +142,139 @@
         \end{column}
     \end{columns}
 \end{frame}
+
+% ------------------------------------------------------------------------------
+% 3D CONTROL LOOP (MPC + FLIGHT CONTROLLER + EKF)
+% ------------------------------------------------------------------------------
+\begin{frame}{3D control loop}
+    \framesubtitle{MPC on top of the flight controller, state estimated by a 3D EKF}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.60\textwidth}
+            \begin{block}{Control principle}
+                \centering
+                \resizebox{\linewidth}{!}{%
+                \begin{tikzpicture}[
+                    auto,
+                    >=Stealth,
+                    thick,
+                    block/.style={
+                        draw,
+                        rectangle,
+                        minimum height=0.7cm,
+                        minimum width=1.6cm,
+                        align=center,
+                        fill=blue!5,
+                        rounded corners=2pt,
+                        font=\scriptsize
+                    },
+                    mpc/.style={
+                        draw,
+                        minimum width=2.1cm,
+                        minimum height=1.3cm,
+                        fill=blue!5,
+                        rounded corners=2pt,
+                        label={[font=\scriptsize]above:\textbf{MPC} $\min_U J(U)$}
+                    }
+                ]
+                    \node[mpc] (mpc) {};
+                    \node[block, minimum width=1.2cm, minimum height=0.5cm, fill=white]
+                        (rnn) at ([yshift=-0.15cm]mpc.center)
+                        {RNN\\[-2pt]\tiny + $\iint$ ($x,y$)};
+                    \node[block, right=1.4cm of mpc] (fc)
+                        {\textbf{Flight}\\[-1pt]\textbf{controller}};
+                    \node[block, right=0.9cm of fc] (sys)
+                        {\textbf{Drone}\\[-1pt]\tiny (system)};
+                    \node[draw, dashed, gray, rounded corners, inner sep=4pt,
+                        fit={(fc) (sys)}] (plant) {};
+                    \node[gray, font=\tiny\itshape, anchor=south]
+                        at (plant.north) {system seen by the RNN};
+                    \node[block, below=1.3cm of $(mpc)!0.5!(plant)$] (ekf)
+                        {\textbf{3D EKF}\\[-1pt]\tiny predict + update};
+
+                    \node[left=0.6cm of mpc] (ref) {};
+                    \draw[->] (ref) -- node {$r$} (mpc.west);
+                    \draw[->] (mpc.east) -- node[name=u] {$u_k$} (fc.west);
+                    \draw[->] (fc.east) -- node[font=\tiny] {$U_{1..4}$} (sys.west);
+                    \draw[->] (sys.south) |- node[pos=0.25, right] {$y_k$} (ekf.east);
+                    \draw[->] (u.south) ++(0,-0.15) -- ++(0,-0.55)
+                        node[right, font=\tiny] {$u_{k-1}$} -- (u.south |- ekf.north);
+                    \draw[->] (ekf.west) -| node[pos=0.75, left] {$\hat{x}_{k|k}$} (mpc.south);
+                \end{tikzpicture}%
+                }
+
+                \vspace{2pt}
+                {\scriptsize\raggedright
+                $r=(x_r, y_r, z_r)$: 3D reference (car position, $z_r$ offset)\\
+                $u=(z_{\mathrm{ref}}, \phi_{\mathrm{ref}}, \theta_{\mathrm{ref}},
+                \psi_{\mathrm{ref}})$: references sent to the flight controller\\
+                $y_k=(a_x, a_y, z, v_x, v_y, x, y)$: measurements\par}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.37\textwidth}
+            \begin{block}{3D EKF}
+                \footnotesize
+                State $x_k = (h_k,\; v_{x,k},\; v_{y,k},\; x_k,\; y_k)$
+                \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+                \begin{align*}
+                    h_k &= \tanh(W_x h_{k-1} + W_u u_{k-1} + b)\\
+                    v_k &= v_{k-1} + a_k\,\Delta t\\
+                    p_k &= p_{k-1} + v_k\,\Delta t
+                \end{align*}
+                {\scriptsize Same model as the MPC prediction: $(a_x, a_y, z)$
+                is the linear readout of $h_k$, so $z$ needs no extra state.\par}
+            \end{block}
+
+            \begin{exampleblock}{Role}
+                \footnotesize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Resets the RNN hidden state and the integrated
+                    $v$, $p$ at each step
+                    \item Removes the drift of the double integration on
+                    $x, y$
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% RESULTS: FOLLOWING THE CAR
+% ------------------------------------------------------------------------------
+\begin{frame}{Results: following the car}
+    \framesubtitle{3D MPC + EKF on the Simulink drone with its flight controller}
+
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.38\textwidth}
+            \begin{block}{Scenario}
+                \centering
+                \includegraphics[width=\linewidth]{car_reference_trajectory.png}
+
+                \vspace{2pt}
+                {\scriptsize\raggedright
+                Sinusoidal car path; the drone flies $0.5$\,m above it and
+                climbs to $2$\,m to pass over the bridge ($x\in[24, 27]$\,m).\par}
+            \end{block}
+
+        \end{column}
+
+        \begin{column}{0.60\textwidth}
+            \centering
+            \includegraphics[
+                width=\linewidth,
+                height=0.66\textheight,
+                keepaspectratio
+            ]{mpc3d_car_tracking.png}
+
+            \begin{exampleblock}{Observations}
+                \scriptsize
+                \begin{itemize}\setlength{\itemsep}{0pt}
+                    \item Close tracking on the 3 axes, no steady-state error
+                    \item Bridge crossed: $z$ climb followed with a small lag
+                    \item Only transient: take-off ($t<2$\,s)
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
