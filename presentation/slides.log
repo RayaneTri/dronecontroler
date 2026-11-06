@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.11.5)  6 NOV 2026 09:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.11.5)  6 NOV 2026 10:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -916,7 +916,7 @@ Package pdftex.def Info: figures/step_3.png  used on input line 38.
  [3
 
  <./figures/step_1.png> <./figures/step_2.png> <./figures/step_3.png>]) (./sections/02_dataset_validation.tex
-<figures/caracteristique statique du dataset.png, id=216, 910.602pt x 530.4618pt>
+<figures/caracteristique statique du dataset.png, id=224, 910.602pt x 530.4618pt>
 File: figures/caracteristique statique du dataset.png Graphic file (type png)
 <use figures/caracteristique statique du dataset.png>
 Package pdftex.def Info: figures/caracteristique statique du dataset.png  used on input line 44.
@@ -924,17 +924,17 @@ Package pdftex.def Info: figures/caracteristique statique du dataset.png  used o
  [4
 
  <./figures/caracteristique statique du dataset.png>]) (./sections/03_modele_lineaire.tex
-<figures/regression sur caracteristique statique.png, id=282, 910.602pt x 530.4618pt>
+<figures/regression sur caracteristique statique.png, id=294, 910.602pt x 530.4618pt>
 File: figures/regression sur caracteristique statique.png Graphic file (type png)
 <use figures/regression sur caracteristique statique.png>
 Package pdftex.def Info: figures/regression sur caracteristique statique.png  used on input line 40.
 (pdftex.def)             Requested size: 126.9832pt x 73.97275pt.
-<figures/hammerstein_model_validation.png, id=283, 1118.0169pt x 625.6173pt>
+<figures/hammerstein_model_validation.png, id=295, 1118.0169pt x 625.6173pt>
 File: figures/hammerstein_model_validation.png Graphic file (type png)
 <use figures/hammerstein_model_validation.png>
 Package pdftex.def Info: figures/hammerstein_model_validation.png  used on input line 40.
 (pdftex.def)             Requested size: 199.17015pt x 111.45116pt.
-<figures/least_squares_model_validation.png, id=284, 1248.1029pt x 612.6087pt>
+<figures/least_squares_model_validation.png, id=296, 1248.1029pt x 612.6087pt>
 File: figures/least_squares_model_validation.png Graphic file (type png)
 <use figures/least_squares_model_validation.png>
 Package pdftex.def Info: figures/least_squares_model_validation.png  used on input line 40.
@@ -975,7 +975,7 @@ Overfull \vbox (26.56766pt too high) detected at line 60
 [7
 
 ]
-<figures/RNN1_results.png, id=470, 715.473pt x 354.123pt>
+<figures/RNN1_results.png, id=494, 715.473pt x 354.123pt>
 File: figures/RNN1_results.png Graphic file (type png)
 <use figures/RNN1_results.png>
 Package pdftex.def Info: figures/RNN1_results.png  used on input line 89.
@@ -985,14 +985,37 @@ Package pdftex.def Info: figures/RNN1_results.png  used on input line 89.
  <./figures/RNN1_results.png>]) (./sections/05_command_design.tex [9
 
 ]) (./sections/06_lq_control.tex
-<figures/linear lqr sinewave input.jpeg, id=607, 1606.0pt x 1042.89626pt>
+<figures/linear lqr sinewave input.jpeg, id=639, 1606.0pt x 1042.89626pt>
 File: figures/linear lqr sinewave input.jpeg Graphic file (type jpg)
 <use figures/linear lqr sinewave input.jpeg>
-Package pdftex.def Info: figures/linear lqr sinewave input.jpeg  used on input line 56.
+Package pdftex.def Info: figures/linear lqr sinewave input.jpeg  used on input line 58.
 (pdftex.def)             Requested size: 191.19234pt x 124.15552pt.
  [10
 
- <./figures/linear lqr sinewave input.jpeg>]) (./sections/07_mpc_control.tex [11
+ <./figures/linear lqr sinewave input.jpeg>]) (./sections/07_mpc_control.tex
+<figures/mpc rnn sinewave input.jpeg, id=706, 3027.31pt x 1971.365pt>
+File: figures/mpc rnn sinewave input.jpeg Graphic file (type jpg)
+<use figures/mpc rnn sinewave input.jpeg>
+Package pdftex.def Info: figures/mpc rnn sinewave input.jpeg  used on input line 73.
+(pdftex.def)             Requested size: 191.1927pt x 124.50346pt.
+ [11
+
+ <./figures/mpc rnn sinewave input.jpeg>]) (./sections/08_mpc_with_ekf.tex
+<figures/sinus mpc boucle ouverte.png, id=759, 1028.84375pt x 547.04375pt>
+File: figures/sinus mpc boucle ouverte.png Graphic file (type png)
+<use figures/sinus mpc boucle ouverte.png>
+Package pdftex.def Info: figures/sinus mpc boucle ouverte.png  used on input line 81.
+(pdftex.def)             Requested size: 164.85384pt x 87.65399pt.
+<figures/sinus ekf mpc.png, id=760, 1022.82124pt x 544.0325pt>
+File: figures/sinus ekf mpc.png Graphic file (type png)
+<use figures/sinus ekf mpc.png>
+Package pdftex.def Info: figures/sinus ekf mpc.png  used on input line 81.
+(pdftex.def)             Requested size: 164.79405pt x 87.65297pt.
+ [12
+
+ <./figures/sinus mpc boucle ouverte.png> <./figures/sinus ekf mpc.png>]) (./sections/09_requested_command.tex [13
+
+]) (./sections/10_comparison.tex [14
 
 ])
 \tf@nav=\write6
@@ -1014,21 +1037,21 @@ L3 programming layer <2026-01-19>
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
 Package rerunfilecheck Info: File `slides.out' has not changed.
-(rerunfilecheck)             Checksum: 151D103BE8356C105B3F4346F56CE495;668.
+(rerunfilecheck)             Checksum: 4BD1BBABB513A9B9EF4216E0094F8D32;567.
  ) 
 Here is how much of TeX's memory you used:
- 29651 strings out of 467525
- 595165 string characters out of 5418982
- 1032561 words of memory out of 5000000
- 57876 multiletter control sequences out of 15000+600000
- 650514 words of font info for 114 fonts, out of 8000000 for 9000
+ 29814 strings out of 467525
+ 599923 string characters out of 5418982
+ 1039566 words of memory out of 5000000
+ 58022 multiletter control sequences out of 15000+600000
+ 651391 words of font info for 116 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 128i,20n,123p,1065b,1155s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi8.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfcc1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfsi1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfso0800.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfso1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0500.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0700.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0800.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0900.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss1440.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfsx1000.pfb>
-Output written on slides.pdf (11 pages, 3874212 bytes).
+ 128i,20n,123p,1065b,1339s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi8.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfcc1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfsi1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfso0800.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfso1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0500.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0700.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0800.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss0900.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss1000.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfss1440.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfsx0700.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfsx1000.pfb>
+Output written on slides.pdf (14 pages, 4347025 bytes).
 PDF statistics:
- 795 PDF objects out of 1000 (max. 8388607)
- 418 compressed objects within 5 object streams
- 29 named destinations out of 1000 (max. 500000)
- 42779 words of extra memory for PDF output out of 42996 (max. 10000000)
+ 1046 PDF objects out of 1200 (max. 8388607)
+ 543 compressed objects within 6 object streams
+ 34 named destinations out of 1000 (max. 500000)
+ 45056 words of extra memory for PDF output out of 51595 (max. 10000000)
 
