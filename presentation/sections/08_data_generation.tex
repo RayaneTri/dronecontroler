@@ -32,57 +32,89 @@
         \begin{column}{0.48\textwidth}
             \begin{block}{APRBS modes}
                 We don't directly generate u inputs (unusable data).
-
-                Four independently generated piecewise-constant modes:
+                Instead, we use a flight controller : the inputs are now four independently generated piecewise-constant modes:
                 \[
                     \delta = [\delta_T,\delta_r,\delta_p,\delta_y]
                 \]
-                
+
                 Each level is sampled uniformly and held for a random duration
                 between $1$ and $3$ seconds.
             \end{block}
-
-            \begin{exampleblock}{Initial phase}
-                The excitation starts after $t_{\mathrm{start}}=2\,\mathrm{s}$,
-                allowing the drone to stabilize at hover.
-            \end{exampleblock}
         \end{column}
     \end{columns}
 \end{frame}
 
 \begin{frame}{Data generation}
-    \framesubtitle{From modal excitation to motor commands}
+    \framesubtitle{Flight controller}
     \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Mixer matrix}
-                The four modal perturbations are mixed into the actuator
-                commands:
-                \[
-                    U = U_{\mathrm{hover}} +
-                    \delta
-                    \begin{bmatrix}
-                    1&1&-1&1\\
-                    1&-1&-1&-1\\
-                    1&-1&1&1\\
-                    1&1&1&-1
-                    \end{bmatrix}^{\!T}
-                \]
-                The resulting commands are clipped to the allowed range.
+        \begin{column}{0.50\textwidth}
+            \begin{block}{From version 1 to version 2}
+                The first version used PID controllers directly on the
+                attitude angles. This solution was stable, but not fast
+                enough for the drone dynamics (see appendix).
+
+                Version 2 therefore uses a cascade controller: an outer
+                angle loop generates an angular-rate reference, followed by
+                a fast inner PID loop based on the gyroscope measurement.
+            \end{block}
+
+            \begin{block}{Controller parameters}
+                \begin{itemize}
+                    \item Outer angle gain: $K_a=2.5$
+                    \item Inner rate PID:
+                    $P=0.125,\ I=0.05,\ D=0.025,\ N=100$
+                    \item Sampling time: $T_s=0.005\,\mathrm{s}$
+                    \item Same structure for roll and pitch
+                \end{itemize}
             \end{block}
         \end{column}
 
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Input/output data}
-                \begin{itemize}
-                    \item Inputs: $U_1,\ldots,U_4$
-                    \item Outputs: angles, angular velocities,
-                          accelerations and angular accelerations
-                    \item One trajectory is stored as a sequence of $N$
-                          time steps
-                    \item Different random seeds improve excitation diversity
-                \end{itemize}
-            \end{block}
+        \begin{column}{0.49\textwidth}
+            \centering
+            \resizebox{\linewidth}{!}{%
+            \begin{tikzpicture}[
+                blk/.style={draw=CSNavy,thick,fill=white,align=center,
+                    inner sep=3pt,minimum height=8mm},
+                sum/.style={circle,draw=CSNavy,thick,fill=white,
+                    minimum size=5mm,inner sep=0pt},
+                sig/.style={->,thick,CSNavy},
+                rate/.style={->,thick,DarkGreen},
+                angle/.style={->,thick,red!70!black},
+                >={Stealth[length=2mm]},
+                hop/.style={preaction={draw=white,line width=3pt}}]
+                \node (ref) at (0,0) {$\phi_{\mathrm{ref}}$};
+                \node[sum] (s1) at (1.2,0) {};
+                \node[blk,minimum width=13mm] (ka) at (2.8,0)
+                    {$K_a$\\[-2pt]\scriptsize $2.5$};
+                \node[sum] (s2) at (4.4,0) {};
+                \node[blk,minimum width=22mm] (pid) at (6.6,0)
+                    {\scriptsize PID rate\\[-2pt]
+                    \scriptsize $P/I/D=0.125/0.05/0.025$};
+                \node[blk,minimum width=5mm,minimum height=25mm] (mux)
+                    at (9.0,0) {\scriptsize Mux};
+                \node[blk,minimum width=12mm,minimum height=25mm] (mix)
+                    at (10.4,0) {$\bar M^{-1}$};
+                \node[blk,minimum width=19mm,minimum height=25mm] (uav)
+                    at (13.0,0) {\scriptsize UAV model};
 
+                \draw[sig] (ref) -- (s1);
+                \draw[sig] (s1) -- node[above,font=\scriptsize]{$e_\phi$} (ka);
+                \draw[sig] (ka) -- node[above,font=\scriptsize]{$p_{\rm ref}$} (s2);
+                \draw[sig] (s2) -- node[above,font=\scriptsize]{$e_p$} (pid);
+                \draw[sig] (pid) -- node[above,font=\scriptsize]{$\delta_r$}
+                    (mux);
+                \draw[sig] (mux) -- (mix);
+                \draw[sig] (mix) -- (uav);
+
+                \draw[rate,hop] (13.9,-0.4) -- (13.9,-1.7) -- (4.4,-1.7)
+                    -- (s2.south);
+                \draw[angle,hop] (14.2,0.3) -- (14.2,-2.5) -- (1.2,-2.5)
+                    -- (s1.south);
+                \node[font=\scriptsize,DarkGreen] at (9,-1.7)
+                    {fast inner rate loop};
+                \node[font=\scriptsize,red!70!black] at (8,-2.5)
+                    {outer angle loop};
+            \end{tikzpicture}}
         \end{column}
     \end{columns}
 \end{frame}
